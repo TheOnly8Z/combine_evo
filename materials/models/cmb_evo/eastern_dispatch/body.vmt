@@ -1,0 +1,12 @@
+"vertexlitgeneric"
+{
+	"$baseTexture" "models/cmb_evo/eastern_dispatch/body"
+       	"$bumpmap" "models/cmb_evo/eastern_dispatch/body_norm"
+ 	"$halflambert" "1"
+	"$model" "1"
+	"$phongexponenttexture" "models/replic/replican_03/body_phong"
+	"$bumpmapalphaphongmask"	1
+	"$phongboost"				1.0
+	"$phongfresnelranges"		"[0 0.5 1]"
+}
+
