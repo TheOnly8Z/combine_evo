@@ -113,8 +113,7 @@ function ENT:OnTakeDamage(dmg)
         fx:SetAngles(self:GetAngles())
         util.Effect("ManhackSparks", fx)
         self.Detonated = true
-        self:SetNoDraw(true)
-        SafeRemoveEntityDelayed(self, 1)
+        self:Remove()
     end
 end
 
@@ -222,8 +221,7 @@ function ENT:PreDetonate()
 
         self:Detonate()
 
-        self:SetNoDraw(true)
-        SafeRemoveEntityDelayed(self, 1)
+        self:Remove()
     end
 end
 

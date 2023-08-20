@@ -1,6 +1,6 @@
 -----------------------------------------------------------
 -- Armored Soldier
--- Model: Magic Nipples (https://steamcommunity.com/workshop/filedetails/?id=1122693988)
+-- Model Credits: Magic Nipples (https://steamcommunity.com/workshop/filedetails/?id=1122693988)
 -----------------------------------------------------------
 
 NPC.Name = "Armored Soldier"
@@ -9,8 +9,8 @@ NPC.Model = "models/cmb_evo/armored_soldier.mdl"
 NPC.Skin = 0
 NPC.Weapons = {"weapon_smg1", "weapon_ar2"}
 NPC.KeyValues = {
-    TacticalVariant = "1",
-    NumGrenades = "5",
+    tacticalvariant = "1",
+    numgrenades = "5",
 }
 NPC.Tags = {["armored"] = true}
 
@@ -64,6 +64,11 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
             end
         end
 
+        local melee_damage = dmginfo:IsDamageType(DMG_CLUB) or dmginfo:IsDamageType(DMG_SLASH) or dmginfo:GetDamageType() == DMG_GENERIC
+        if hitgroup == HITGROUP_GENERIC and melee_damage then
+            hitgroup = HITGROUP_CHEST
+        end
+
         if ent.CmbEvoArmor == nil then
             ent.CmbEvoArmor = {
                 [HITGROUP_CHEST] = 40,
@@ -78,6 +83,7 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
 
             local dmg = dmginfo:GetDamage()
             if dmginfo:IsDamageType(DMG_BUCKSHOT) then dmg = dmg * 0.8 end
+            if melee_damage then dmg = dmg * 0.25 end
 
             -- Block damage and hurt armor
             ent.CmbEvoArmor[hitgroup] = ent.CmbEvoArmor[hitgroup] - dmg

@@ -44,6 +44,10 @@ for _, filename in ipairs(files) do
             SpawnFlags = NPC.SpawnFlags,
             KeyValues = NPC.KeyValues,
         }, "cmbevo_" .. shortname)
+
+        if CLIENT then
+            language.Add(NPC.Name, NPC.Name)
+        end
     end
 end
 
@@ -126,6 +130,6 @@ end
 -- Helper Functions
 -----------------------------------------------------------
 function CMBEVO.GetTag(ent, tag)
-    if not ent.CMBEVO_Tags then return nil end
+    if not IsValid(ent) or not ent.CMBEVO_Tags then return nil end
     return ent.CMBEVO_Tags[tag]
 end

@@ -1,6 +1,7 @@
 -----------------------------------------------------------
 -- Eastern Dispatch
--- Model: https://gamebanana.com/mods/183076
+-- Model Credits: https://gamebanana.com/mods/183076
+-- Weapon Credits: STUDIO RADI-8, ported by Kali (https://steamcommunity.com/sharedfiles/filedetails/?id=146626186)
 -----------------------------------------------------------
 
 NPC.Name = "Eastern Dispatch"
@@ -78,8 +79,11 @@ function NPC:OnGrenadeCreated(ent)
 
                 local cur_squad = npc:GetSquad() -- each npc gets their own squad so everyone gets to shoot
                 local cur_prof = npc:GetCurrentWeaponProficiency()
-                npc:SetCurrentWeaponProficiency(math.min(cur_prof + 2, WEAPON_PROFICIENCY_PERFECT))
+                npc:SetCurrentWeaponProficiency(math.min(cur_prof + (tgt:IsPlayer() and 2 or 3), WEAPON_PROFICIENCY_PERFECT))
                 npc:SetSquad("eastern_charge_" .. npc:EntIndex())
+
+                -- cheat a little and reload their clip so they can shoot during the charge
+                npc:GetActiveWeapon():SetClip1(npc:GetActiveWeapon():GetMaxClip1())
 
                 local glow = ents.Create("env_sprite")
                 glow:SetKeyValue("model", "sprites/glow08.vmt")
@@ -132,6 +136,6 @@ end
 
 hook.Add("EntityTakeDamage", "cmb_evo_resist_exp", function(ent, dmginfo)
     if CMBEVO.GetTag(ent, "resist_exp") == true and dmginfo:IsExplosionDamage() then
-        dmginfo:ScaleDamage(0.3)
+        dmginfo:ScaleDamage(0.4)
     end
 end)

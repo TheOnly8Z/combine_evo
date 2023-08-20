@@ -1,0 +1,20 @@
+"VertexlitGeneric"
+{
+	"$basetexture" "models\cmb_evo\weapons\w_mpn45\mpn45_body"
+	"$bumpmap" "models\cmb_evo\weapons\w_mpn45\mpn45_body_n"
+	"$halflambert" "1"
+	"$nocull" 0
+	"$blendtintbybasealpha" "1"
+
+	"$normalmapalphaenvmapmask" 1
+	"$envmap" "env_cubemap"
+	"$envmaptint" "[ .3 .3 .3 ]"
+ 	"$envmapFresnel" "0.5"
+
+	"$phong" "1"
+	"$phongexponenttexture" "models\cmb_evo\weapons\w_mpn45\mpn45_body_exp"
+	"$phongboost" "1.9"
+	"$phongfresnelranges"	"[ .2 1.2 8]"
+
+	"$PhongAlbedoTint" "1"
+}

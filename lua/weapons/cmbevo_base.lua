@@ -69,17 +69,16 @@ function SWEP:PrimaryAttack()
 
     self:GetOwner():MuzzleFlash()
     -- self:GetOwner():SetAnimation(ACT_RANGE_ATTACK1)
-    if IsFirstTimePredicted() and self.Primary.EjectName then
-        local att = self:GetAttachment(2)
-        if att then
-            local eff = EffectData()
-            eff:SetEntity(self)
-            eff:SetOrigin(att.Pos)
-            eff:SetAngles(att.Ang)
-            util.Effect(self.Primary.EjectName, eff)
-        end
-
-    end
+    -- if IsFirstTimePredicted() and self.Primary.EjectName then
+    --     local att = self:GetAttachment(2)
+    --     if att then
+    --         local eff = EffectData()
+    --         eff:SetEntity(self)
+    --         eff:SetOrigin(att.Pos)
+    --         eff:SetAngles(att.Ang)
+    --         util.Effect(self.Primary.EjectName, eff)
+    --     end
+    -- end
 end
 
 function SWEP:GetCapabilities()
