@@ -11,8 +11,8 @@ ENT.Delay = 0
 
 ENT.ExplodeSounds = {
     "^cmb_evo/weapons/frag_explode-1.wav",
-    "^cmb_evo/weapons/frag_explode-1.wav",
-    "^cmb_evo/weapons/frag_explode-1.wav",
+    "^cmb_evo/weapons/frag_explode-2.wav",
+    "^cmb_evo/weapons/frag_explode-3.wav",
 }
 
 local clr = Color(255, 128, 0, 150)

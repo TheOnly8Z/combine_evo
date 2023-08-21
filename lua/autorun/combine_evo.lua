@@ -40,6 +40,7 @@ for _, filename in ipairs(files) do
             Category = NPC.Category or Category,
             Model = NPC.Model,
             Skin = NPC.Skin or 0,
+            Health = NPC.Health,
             Weapons = NPC.Weapons,
             SpawnFlags = NPC.SpawnFlags,
             KeyValues = NPC.KeyValues,
@@ -51,13 +52,45 @@ for _, filename in ipairs(files) do
     end
 end
 
+-----------------------------------------------------------
+-- NPC Initialize Function
+-----------------------------------------------------------
+
 if SERVER then
+
+    function CMBEVO.InitializeNPC(ent, shortname)
+        if not IsValid(ent) or not ent:IsNPC() then return end
+        local data = CMBEVO.NPC[shortname]
+        if not data then
+            ErrorNoHalt("Tried to initialize invalid CMBEVO NPC \"" .. tostring(shortname) .. "\" on " .. tostring(ent) .. "!\n")
+        end
+
+        ent.CMBEVO_ShortName = shortname
+        ent:SetKeyValue("parentname", "")
+
+        if data.Tags then
+            ent.CMBEVO_Tags = table.Copy(data.Tags)
+        end
+
+        if data.Proficiency then
+            ent:SetCurrentWeaponProficiency(data.Proficiency)
+        end
+
+        if isfunction(data.OnSpawn) then
+            data.OnSpawn(ent)
+        end
+
+        CMBEVO.NPC_Cache[shortname] = CMBEVO.NPC_Cache[shortname] or {}
+        table.insert(CMBEVO.NPC_Cache[shortname], ent)
+    end
+
     hook.Add("OnEntityCreated", "cmb_evo", function(ent)
 
         if ent:GetClass() == "npc_grenade_frag" then
             timer.Simple(0, function()
+                if not IsValid(ent) then return end
                 local npc = ent:GetOwner()
-                if npc.CMBEVO_ShortName and CMBEVO.NPC[npc.CMBEVO_ShortName] then
+                if IsValid(npc) and npc.CMBEVO_ShortName and CMBEVO.NPC[npc.CMBEVO_ShortName] then
                     local final_nade = ent
                     if CMBEVO.NPC[npc.CMBEVO_ShortName].GrenadeEntity then
                         local new_nade = ents.Create(CMBEVO.NPC[npc.CMBEVO_ShortName].GrenadeEntity)
@@ -79,29 +112,14 @@ if SERVER then
                 end
                 -- PrintTable(ent:GetSaveTable(true))
             end)
-        end
-    end)
-
-    hook.Add("PlayerSpawnedNPC", "cmb_evo", function(ply, ent)
-        local name = ent:GetKeyValues()["parentname"] or ""
-
-        if string.Left(name, 7) == "cmbevo_" then
-            local shortname = string.sub(name, 8)
-            if CMBEVO.NPC[shortname] then
-                ent.CMBEVO_ShortName = shortname
-                ent:SetKeyValue("parentname", "")
-
-                if CMBEVO.NPC[shortname].Tags then
-                    ent.CMBEVO_Tags = table.Copy(CMBEVO.NPC[shortname].Tags)
+        elseif ent:IsNPC() then
+            timer.Simple(0, function()
+                if not IsValid(ent) then return end
+                local name = ent:GetKeyValues()["parentname"] or ""
+                if string.Left(name, 7) == "cmbevo_" then
+                    CMBEVO.InitializeNPC(ent, string.sub(name, 8))
                 end
-
-                if isfunction(CMBEVO.NPC[shortname].OnSpawn) then
-                    CMBEVO.NPC[shortname].OnSpawn(ent, ply)
-                end
-
-                CMBEVO.NPC_Cache[shortname] = CMBEVO.NPC_Cache[shortname] or {}
-                table.insert(CMBEVO.NPC_Cache[shortname], ent)
-            end
+            end)
         end
     end)
 
@@ -113,7 +131,10 @@ if SERVER then
                         table.remove(tbl, i)
                         continue
                     end
-                    CMBEVO.NPC[shortname].Think(npc)
+                    if (npc.CMBEVO_NextThink or 0) < CurTime() then
+                        npc.CMBEVO_NextThink = CurTime() + (isnumber(CMBEVO.NPC[shortname].ThinkInterval) and CMBEVO.NPC[shortname].ThinkInterval or 1)
+                        CMBEVO.NPC[shortname].Think(npc)
+                    end
                 end
             end
         end

@@ -1,0 +1,14 @@
+"vertexlitgeneric"
+{
+	"$baseTexture" "models/cmb_evo/eastern_elite/head"
+        "$bumpmap" "models/cmb_evo/eastern_elite/head_norm"
+	"$envmap" "env_cubemap"
+	"$normalmapalphaenvmapmask" 1 
+// 	"$halflambert" "1"
+	"$phongexponent"			33
+	"$bumpmapalphaphongmask"	1
+	"$phongboost"				1.0
+	"$phongfresnelranges"		"[0 0.5 1]"
+	"$selfillum" 1
+}
+
