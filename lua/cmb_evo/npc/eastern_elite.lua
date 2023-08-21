@@ -8,7 +8,7 @@ NPC.Name = "Eastern Elite"
 NPC.Class = "npc_combine_s"
 NPC.Model = "models/cmb_evo/eastern_elite.mdl"
 NPC.Skin = 0
-NPC.Weapons = {"cmbevo_eastern_ar", "weapon_ar2", "cmbevo_eastern_ar", "cmbevo_eastern_ar"}
+NPC.Weapons = {"cmbevo_eastern_ar"}
 NPC.SpawnFlags = 16384 + 262144 -- SF_NPC_NO_PLAYER_PUSHAWAY + SF_COMBINE_NO_AR2DROP
 NPC.Health = 70 -- sk_combine_guard_health
 NPC.Proficiency = WEAPON_PROFICIENCY_VERY_GOOD
@@ -63,6 +63,7 @@ local squadi = 1
 function NPC:Think()
 
     -- Split up squads if it gets too big
+    --[[]
     if defaultsquads[self:GetSquad()] and (self.CMBEVO_NextSquadCheck or 0) < CurTime() then
         self.CMBEVO_NextSquadCheck = CurTime() + 5
         local squad = self:GetSquad()
@@ -114,6 +115,7 @@ function NPC:Think()
 
         end
     end
+    ]]
 
     if bit.band(self:CapabilitiesGet(), CAP_WEAPON_RANGE_ATTACK2) ~= 0
         and IsValid(self:GetEnemy()) and math.random() <= (self:GetEnemy():IsPlayer() and 0.5 or 0.75) -- only 50% chance per try for players

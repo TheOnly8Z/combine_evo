@@ -50,8 +50,6 @@ Eastern Elites have the same equipment as Eastern Dispatch units, plus the follo
 - Compared to the AR2, the weapon is more accurate, but has slower bursts and a lower capacity.
 - The underbarrel shotgun does the same damage as the SPAS-12 with bigger spread.
 
-**AR2**: Some Eastern Elites still use the standard issue pulse rifle. They can fire balls just like regular Elites, but will not throw grenades.
-
 **External Bodyplates**: Eastern Elites wear external armor on their thighs and left shoulder.
 
 **Blast Knuckle**: An impact grenade delivered in fist form. Initially a last-ditch attempt to kill a Zombine, Eastern Elites quickly discovered how survivable this suicidal maneuver is, and informally formalized it into their doctrine. However, survival is far from guaranteed.
@@ -60,8 +58,6 @@ Eastern Elites have the same equipment as Eastern Dispatch units, plus the follo
 Eastern Elites are more discerning when it comes to assaults. When an elite is present in a squad, The squad will only attempt an assault if the squad has a health or numbers advantage; otherwise it will perform suppressive fire instead.
 
 Eastern Elites will throw grenades at close enemies more frequently than soldiers.
-
-If more than 6 soldiers and elites are present, an elite will form up a new squad with themselves and 3 other members. The members will have a colored light indicating their squad status. This allows large groups of Eastern Dispatch soldiers and elites to function more effectively.
 
 ### Credits
 NPC Model: https://gamebanana.com/mods/183076
