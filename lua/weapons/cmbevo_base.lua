@@ -14,6 +14,11 @@ SWEP.Primary.Num = 1
 SWEP.Primary.Cone = 0.03
 SWEP.Primary.Delay = 0.1
 
+SWEP.Primary.Projectile = nil -- entity class
+SWEP.Primary.ProjectileVelocity = 1000
+SWEP.Primary.ProjectileVelocityOverDistance = 0.03
+SWEP.Primary.ProjectileArc = nil
+
 SWEP.Primary.Tracer = 5
 SWEP.Primary.TracerName = "Tracer"
 SWEP.Primary.EjectName = "ShellEject"
@@ -52,6 +57,16 @@ function SWEP:CanBePickedUpByNPCs()
     return true
 end
 
+local function anglerotate(main, off)
+    local forward, up, right = main:Forward(), main:Up(), main:Right()
+
+    main:RotateAroundAxis(right, off.p)
+    main:RotateAroundAxis(up, off.y)
+    main:RotateAroundAxis(forward, off.r)
+
+    return main
+end
+
 function SWEP:PrimaryAttack()
 
     if not self:CanPrimaryAttack() or self:GetNextPrimaryFire() > CurTime() then return end
@@ -59,18 +74,39 @@ function SWEP:PrimaryAttack()
 
     local owner = self:GetOwner()
 
-    local bullet = {}
-    bullet.Num		= self.Primary.Num
-    bullet.Src		= owner:GetShootPos()
-    bullet.Dir		= owner:GetAimVector()
-    bullet.Spread	= Vector( self.Primary.Cone, self.Primary.Cone, 0 )		-- Aim Cone
-    bullet.Tracer	= self.Primary.Tracer
-    bullet.TracerName = self.Primary.TracerName
-    bullet.Force	= 1
-    bullet.HullSize = self.Primary.HullSize
-    bullet.Damage	= self.Primary.Damage
-    bullet.AmmoType = self.Primary.Ammo
-    owner:FireBullets(bullet)
+    if self.Primary.Projectile then
+        local ang = owner:GetAimVector():Angle()
+        local a = math.Rand(0, 360)
+        local angleRand = Angle(math.sin(a), math.cos(a), 0)
+        angleRand:Mul(self.Primary.Cone * math.Rand(0, 45) * 1.4142135623730)
+        ang = anglerotate(ang, angleRand)
+
+        local vel = self.Primary.ProjectileVelocity + self.Primary.ProjectileVelocityOverDistance * (owner:GetEnemy():GetPos() - owner:GetShootPos()):Length2D()
+        if self.Primary.ProjectileArc then
+            ang.p = math.max(-89, ang.p - self.Primary.ProjectileArc)
+        end
+
+        local bullet = ents.Create(self.Primary.Projectile)
+        bullet:SetPos(owner:GetShootPos())
+        bullet:SetAngles(ang)
+        bullet:SetOwner(owner)
+        bullet:Spawn()
+        bullet:GetPhysicsObject():SetVelocity(ang:Forward() * vel)
+        self:OnProjectileCreated(bullet)
+    else
+        local bullet = {}
+        bullet.Num		= self.Primary.Num
+        bullet.Src		= owner:GetShootPos()
+        bullet.Dir		= owner:GetAimVector()
+        bullet.Spread	= Vector( self.Primary.Cone, self.Primary.Cone, 0 )		-- Aim Cone
+        bullet.Tracer	= self.Primary.Tracer
+        bullet.TracerName = self.Primary.TracerName
+        bullet.Force	= 1
+        bullet.HullSize = self.Primary.HullSize
+        bullet.Damage	= self.Primary.Damage
+        bullet.AmmoType = self.Primary.Ammo
+        owner:FireBullets(bullet)
+    end
 
     self:TakePrimaryAmmo(1)
     self:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
@@ -152,4 +188,7 @@ function SWEP:GetNPCRestTimes()
     if self.BurstRestTimes then
         return self.BurstRestTimes[1], self.BurstRestTimes[2]
     end
+end
+
+function SWEP:OnProjectileCreated(ent)
 end

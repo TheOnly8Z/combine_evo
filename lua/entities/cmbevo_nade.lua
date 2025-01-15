@@ -167,14 +167,16 @@ function ENT:PhysicsCollide(data, collider)
         end
 
         self.Attacker = self:GetOwner()
-        self:SetOwner(NULL)
 
         if self.StickyFuse and !self.Armed then
             self.ArmTime = CurTime()
             self.Armed = true
         end
 
-        self:Stuck()
+        timer.Simple(0.01, function()
+            self:Stuck()
+            self:SetOwner(NULL)
+        end)
     end
 
     if data.DeltaTime < 0.1 then return end
