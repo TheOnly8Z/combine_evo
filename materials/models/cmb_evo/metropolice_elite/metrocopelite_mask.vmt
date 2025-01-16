@@ -1,0 +1,15 @@
+"VertexLitGeneric"
+{
+	"$bumpmap" "models/cmb_evo/metropolice_elite/metrocopelite_mask_nm"
+	"$surfaceprop" "flesh"
+	"$selfillum" 1
+	"$model" 1
+	"$phong" 1
+	"$phongboost" "2"
+	"$halflambert" "1"
+	"$phongexponenttexture" "models/cmb_evo/metropolice_elite/metrocopelite_mask_phong"
+	"$phongalbedotint" "1"										
+	"$phongfresnelranges"	"[.1 .5 1.0]"
+	"$baseTexture" 		"models/cmb_evo/metropolice_elite/metrocopelite_mask"
+	"$selfillummask" 	"models/cmb_evo/metropolice_elite/metrocopelite_mask_selfillummask"
+}

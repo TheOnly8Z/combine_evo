@@ -3,12 +3,12 @@
 -- Model Credits: Magic Nipples (https://steamcommunity.com/workshop/filedetails/?id=1122693988)
 -----------------------------------------------------------
 
-local armor_chest = CreateConVar("cmbevo_armored_chest", 40, FCVAR_ARCHIVE, "[Armored Soldier] Durability of chest armor.", 1)
-local armor_limbs = CreateConVar("cmbevo_armored_limbs", 25, FCVAR_ARCHIVE, "[Armored Soldier] Durability of limb armor.", 1)
+local armor_chest = CreateConVar("cmbevo_armored_chest", 50, FCVAR_ARCHIVE, "[Armored Soldier] Durability of chest armor.", 1)
+local armor_limbs = CreateConVar("cmbevo_armored_limbs", 35, FCVAR_ARCHIVE, "[Armored Soldier] Durability of limb armor.", 1)
 
 NPC.Name = "Armored Soldier"
 NPC.Class = "npc_combine_s"
-NPC.Model = "models/cmb_evo/armored_soldier.mdl"
+NPC.Model = "models/cmb_evo/armored_soldier_new.mdl"
 NPC.Skin = 0
 NPC.Weapons = {"weapon_smg1", "weapon_ar2"}
 NPC.KeyValues = {
@@ -31,23 +31,17 @@ function NPC:OnSpawn(ply)
         [HITGROUP_LEFTLEG_ARMOR] = armor_limbs:GetInt(),
         [HITGROUP_RIGHTLEG_ARMOR] = armor_limbs:GetInt(),
     }
+    self.CmbEvoArmorBodygroup = {
+        [HITGROUP_CHEST] = 1,
+        [HITGROUP_LEFTARM_ARMOR] = 2,
+        [HITGROUP_RIGHTARM_ARMOR] = 3,
+        [HITGROUP_LEFTLEG_ARMOR] = 4,
+        [HITGROUP_RIGHTLEG_ARMOR] = 5,
+    }
+    self.CmbEvoArmorBackplate = false
 end
 
 if CLIENT then return end
-
-local hitgroup_to_bodygroup = {
-    [HITGROUP_CHEST] = 1,
-    [HITGROUP_LEFTARM_ARMOR] = 2,
-    [HITGROUP_RIGHTARM_ARMOR] = 3,
-    [HITGROUP_LEFTLEG_ARMOR] = 4,
-    [HITGROUP_RIGHTLEG_ARMOR] = 5,
-}
-local limbs = {
-    [HITGROUP_LEFTARM_ARMOR] = true,
-    [HITGROUP_RIGHTARM_ARMOR] = true,
-    [HITGROUP_LEFTLEG_ARMOR] = true,
-    [HITGROUP_RIGHTLEG_ARMOR] = true,
-}
 
 hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
     if CMBEVO.GetTag(ent, "armored") == true then
@@ -77,6 +71,23 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
             hitgroup = HITGROUP_CHEST
         end
 
+        -- TacRP weapons hit arms too hard, so they are protected too
+        if IsValid(inflictor) and inflictor.ArcticTacRP then
+            if hitgroup == HITGROUP_LEFTARM then
+                hitgroup = HITGROUP_LEFTARM_ARMOR
+            elseif hitgroup == HITGROUP_RIGHTARM then
+                hitgroup = HITGROUP_RIGHTARM_ARMOR
+            end
+        end
+
+        -- Exposed back?
+        if hitgroup == HITGROUP_CHEST and not ent.CmbEvoArmorBackplate then
+            local _, bang = ent:GetBonePosition(ent:LookupBone("ValveBiped.Bip01_Spine2"))
+            if (dmginfo:GetDamageForce():GetNormalized():Dot(bang:Right()) < 0) then
+                hitgroup = HITGROUP_GENERIC
+            end
+        end
+
         if ent.CmbEvoArmor == nil then
             ent.CmbEvoArmor = {
                 [HITGROUP_CHEST] = armor_chest:GetInt(),
@@ -90,16 +101,22 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
         if (ent.CmbEvoArmor[hitgroup] or 0) > 0 then
 
             local dmg = dmginfo:GetDamage()
+            local dmg_to_hp
             if IsValid(inflictor) and inflictor.ArcticTacRP then
-                dmg = dmg * inflictor:GetValue("ArmorPenetration")
-            elseif dmginfo:IsDamageType(DMG_BUCKSHOT) then
-                dmg = dmg * 0.75
+                dmg_to_hp = dmg * math.max(inflictor:GetValue("ArmorPenetration") - 0.4, 0) * 2
+                dmg = (dmg - dmg_to_hp) * inflictor:GetValue("ArmorBonus")
+            else
+                if dmginfo:IsDamageType(DMG_BUCKSHOT) then
+                    dmg = dmg * 0.75
+                elseif melee_damage then
+                    dmg = dmg * 0.25
+                end
+                dmg_to_hp = math.max(dmg - ent.CmbEvoArmor[hitgroup], 0)
             end
-            if melee_damage then dmg = dmg * 0.25 end
 
             -- Block damage and hurt armor
+            dmginfo:SetDamage(dmg_to_hp)
             ent.CmbEvoArmor[hitgroup] = ent.CmbEvoArmor[hitgroup] - dmg
-            dmginfo:SetDamage(0)
 
             local dir = dmginfo:GetDamageForce():GetNormalized()
             local eff = EffectData()
@@ -110,20 +127,26 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
 
             if ent.CmbEvoArmor[hitgroup] <= 0 then
                 -- broken!
-                ent:SetBodygroup(hitgroup_to_bodygroup[hitgroup], 1)
+                ent:SetBodygroup(ent.CmbEvoArmorBodygroup[hitgroup], 1)
                 ent:EmitSound("^npc/strider/strider_step" .. math.random(1, 3) .. ".wav", 80, math.Rand(95, 100), 1, CHAN_BODY)
                 ent:SetSchedule(SCHED_FLINCH_PHYSICS)
                 if hitgroup == HITGROUP_CHEST or ent:Health() <= ent:GetMaxHealth() * 0.5 or math.random() <= 0.25 then
-                    ent:PlaySentence("COMBINE_COVER", 0, 1)
-                    ent:SetKeyValue("TacticalVariant", "0") -- Pussy Mode Activated
+                    if ent:GetClass() == "npc_combine_s" then
+                        ent:PlaySentence("COMBINE_COVER", 0, 1)
+                        ent:SetKeyValue("TacticalVariant", "0") -- Pussy Mode Activated
+                    else
+                        -- metropolice
+                        ent:PlaySentence("METROPOLICE_COVER_HEAVY_DAMAGE", 0, 1)
+                    end
                     timer.Simple(1, function()
                         if IsValid(ent) then
                             ent:SetSchedule(SCHED_TAKE_COVER_FROM_ENEMY)
                         end
                     end)
-                else
+                elseif ent:GetClass() == "npc_combine_s" then
                     ent:PlaySentence("COMBINE_TAUNT", 0, 1)
                 end
+                eff:SetRadius(8)
                 util.Effect("cball_bounce", eff)
             else
                 ent:EmitSound("player/kevlar" .. math.random(1, 5) .. ".wav", 80, math.Rand(95, 100), 1, CHAN_BODY)

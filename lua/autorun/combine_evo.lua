@@ -145,6 +145,12 @@ if SERVER then
             return true
         end
     end)
+
+    hook.Add("OnNPCKilled", "cmb_evo", function(ent, attacker, inflictor)
+        if ent.CMBEVO_ShortName and isfunction(CMBEVO.NPC[ent.CMBEVO_ShortName].OnDeath) then
+            CMBEVO.NPC[ent.CMBEVO_ShortName].OnDeath(ent, attacker, inflictor)
+        end
+    end)
 end
 
 -----------------------------------------------------------
