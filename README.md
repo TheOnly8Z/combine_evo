@@ -1,6 +1,19 @@
 # Combine Evoloution
 An addon for Garry's Mod that adds more tactically diverse Combine NPCs.
 
+## Riot Metro-Police
+Metropolitan enforcers armed with riot shields to combat whatever makeshift melee weaponry unruly citizens have acquired.
+
+### Equipment
+
+**Riot Shield**: See-through shield held with the left arm. Despite its frail appearance, it can withstand most conventional projectiles and melee attacks. Fortunately, it is far too bulky to humans to use it together with firearms, so Riot Metro-Police are armed with Stun Batons instead.
+
+### Tactics
+Riot Metro-Police behave the same as their regular counterparts.
+
+### Credits
+Riot Shield model: Tactical Intervention
+
 ## Armored Soldier
 Late generation Combine infantry, hastily equipped with armor in a desperate attempt to combat the post-uprising human resistance.
 
@@ -8,7 +21,7 @@ Late generation Combine infantry, hastily equipped with armor in a desperate att
 
 **Standard Weaponry**: Armored soldiers use the same weapons as regular soldiers.
 
-**External Bodyplates**: Synthetic armor worn on the chest, shoulders and thighs. When the armor is shot, it can withstand some damage and prevent flinching, but will eventually break.
+**External Bodyplates**: Synthetic armor worn on the chest, shoulders and thighs. When the armor is shot, it can withstand some damage and prevent flinching, but will eventually break. The chestpiece can only protect from the front.
 The armor is especially resistant to buckshot rounds and melee attacks, but cannot defend against against explosives, headshots, crossbow bolts, and physics-based damage.
 
 ### Tactics
@@ -16,7 +29,7 @@ Whether it is out of confidence from the armor or desperation, armored soldiers 
 If their bodypack breaks, the shock will force them to flinch, and perhaps make them reconsider their aggressive manuvers.
 
 ### Credits
-NPC Model: https://steamcommunity.com/workshop/filedetails/?id=1122693988
+Armor Model: https://steamcommunity.com/sharedfiles/filedetails/?id=1921702490
 
 ## Eastern Dispatch Soldier
 An unusual regiment of transhuman soldiers hailing from the far east (read: probably Japan or something). They favor coordinated assaults supported by their signature impact grenades and close-range SMGs.
@@ -63,3 +76,16 @@ Eastern Elites will throw grenades at close enemies more frequently than soldier
 NPC Model: https://gamebanana.com/mods/183076
 Weapon Model: NeoTokyo and Tactical Intervention
 Weapon Sound: Tactical Intervention
+
+## Combine Grenadier
+Support unit using an heavy explosive launcher, specializing in medium range area denial.
+
+### Equipment
+
+**Frag Launcher**: Man portable grenade launcher with high fire rate and long distance.
+- Projectiles explode shortly after impact. While the radius and damage are small, the sheer volume of grenades makes grenadiers very intimidating.
+
+**Relocator**: Special impact grenades that do no damage, instead launching everything in the affected area backwards.
+
+### Tactics
+Grenadiers cannot use their weapons up close. They will make every attempt to keep distance, including throwing Relocators at their feet to launch themselves away.
