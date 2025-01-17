@@ -10,9 +10,12 @@ SWEP.HoldType = "ar2"
 SWEP.Primary.ShootSound = "CMB_EVO.ZR68.Fire"
 SWEP.Secondary.ShootSound = "CMB_EVO.TGS12.Fire"
 
+SWEP.Primary.AimStartSound = ""
+SWEP.Primary.AimCancelSound = ""
+
 SWEP.Primary.Damage = 3
 SWEP.Primary.Num = 1
-SWEP.Primary.Cone = 0.012
+SWEP.Primary.Cone = 0.01
 SWEP.Primary.Delay = 0.1
 SWEP.Primary.HullSize = 0
 
@@ -20,7 +23,7 @@ SWEP.Primary.Tracer = 2
 SWEP.Primary.TracerName = "Tracer"
 SWEP.Primary.EjectName = "RifleShellEject"
 
-SWEP.SpreadFromProficiency = {2, 12}
+SWEP.SpreadFromProficiency = {2, 15}
 SWEP.BurstSettings = {3, 5, 0.1}
 SWEP.BurstRestTimes = {0.6, 1}
 
@@ -29,11 +32,18 @@ SWEP.Primary.DefaultClip = 20
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "ar2"
 
+SWEP.Primary.AimTime = 0.25
+SWEP.Primary.AimTimeThreshold = 0.15
+SWEP.Primary.AimBlindFireChance = 0.8
+
+SWEP.Primary.AimLaserStrength = 0
+SWEP.Primary.AimLaserColor = Color(100, 75, 255)
+
 SWEP.Secondary.Damage = 3
 SWEP.Secondary.Num = 8
-SWEP.Secondary.Cone = 0.1
+SWEP.Secondary.Cone = 0.14
 SWEP.Secondary.Delay = 0.5
-SWEP.Secondary.HullSize = 4
+SWEP.Secondary.HullSize = 1
 SWEP.Secondary.Tracer = 2
 SWEP.Secondary.TracerName = "Tracer"
 SWEP.Secondary.EjectName = "ShotgunShellEject"

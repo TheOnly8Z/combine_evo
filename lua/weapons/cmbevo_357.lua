@@ -21,6 +21,9 @@ SWEP.Primary.AimTime = 1.4
 SWEP.Primary.AimTimeThreshold = 1
 SWEP.Primary.AimBlindFireChance = 0.5
 
+SWEP.Primary.AimLaserStrength = 10
+SWEP.Primary.AimLaserColor = Color(255, 0, 0)
+
 SWEP.SpreadFromProficiency = {0, 3}
 SWEP.BurstSettings = {1, 1, 0}
 SWEP.BurstRestTimes = {0, 0}

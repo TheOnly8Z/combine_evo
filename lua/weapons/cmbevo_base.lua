@@ -25,6 +25,9 @@ SWEP.Primary.AimTime = 0 -- Must lock onto target for this long before firing
 SWEP.Primary.AimTimeThreshold = nil -- If lock on time is longer than this, we won't cancel the shot anymore even if they go behind cover
 SWEP.Primary.AimBlindFireChance = 0.5 -- After a shot, this is the chance the NPC will be okay with shooting at cover
 
+SWEP.Primary.AimLaserStrength = 0
+SWEP.Primary.AimLaserColor = Color(255, 0, 0)
+
 SWEP.Primary.AimStartSound = "CMB_EVO.ChargeUp"
 SWEP.Primary.AimCancelSound = "CMB_EVO.ChargeEnd"
 
@@ -122,6 +125,9 @@ function SWEP:PrimaryAttack()
     -- self:SetAimLostTime(0)
     if self.AimSound then
         self.AimSound:Stop()
+    end
+    if self.Primary.AimTime > 0 and math.random() > self.Primary.AimBlindFireChance then
+        self.AllowAimMiss = false
     end
 
     local owner = self:GetOwner()
@@ -258,12 +264,14 @@ function SWEP:Think()
 
             if CurTime() >= self:GetAimTime() + self.Primary.AimTime then
                 if self:Clip1() > 0 and IsValid(self:GetOwner():GetEnemy()) and self:GetOwner():GetEnemy():Health() > 0 then
+                    --[[]
                     if self:GetNextPrimaryFire() < CurTime() then
                         self:PrimaryAttack()
                         if math.random() > self.Primary.AimBlindFireChance then
                             self.AllowAimMiss = false
                         end
                     end
+                    ]]
                 else
                     self:StopAim()
                 end
@@ -288,7 +296,7 @@ if CLIENT then
 
     function SWEP:DrawWorldModelTranslucent(flag)
         local owner = self:GetOwner()
-        if IsValid(owner) and self:GetAimTime() > 0 then
+        if IsValid(owner) and self:GetAimTime() > 0 and self.Primary.AimLaserStrength > 0 then
             local att = self:GetAttachment(1)
             local pos = att.Pos
             local tr = util.TraceLine({
@@ -298,17 +306,17 @@ if CLIENT then
                 filter = self:GetOwner()
             })
 
-            local strength = Lerp((CurTime() - self:GetAimTime()) / self.Primary.AimTime ^ 4, 0, 5)
+            local strength = Lerp((CurTime() - self:GetAimTime()) / self.Primary.AimTime ^ 4, 0, self.Primary.AimLaserStrength)
             render.SetMaterial(lasermat)
             local width = math.Rand(0.4, 0.5) * strength
             render.DrawBeam(tr.StartPos, tr.HitPos, width * 0.3, 0, 1, col2)
-            render.DrawBeam(tr.StartPos, tr.HitPos, width, 0, 1, col)
+            render.DrawBeam(tr.StartPos, tr.HitPos, width, 0, 1, self.Primary.AimLaserColor)
 
             if tr.Hit and not tr.HitSky then
                 local rad = math.Rand(4, 6) * strength
 
                 render.SetMaterial(flaremat)
-                render.DrawSprite(tr.HitPos, rad, rad, col)
+                render.DrawSprite(tr.HitPos, rad, rad, self.Primary.AimLaserColor)
                 render.DrawSprite(tr.HitPos, rad * 0.3, rad * 0.3, col2)
             end
         end

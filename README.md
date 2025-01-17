@@ -2,7 +2,7 @@
 An addon for Garry's Mod that adds more tactically diverse Combine NPCs.
 
 ## Standard Units
-These Combine units are similar in power to their vanilla counterparts.
+These Combine units are similar in power to their vanilla counterparts with minor augmentations.
 
 ### Riot Police
 Metropolitan enforcers armed with riot shields to combat whatever makeshift melee weaponry unruly citizens have acquired.
@@ -17,9 +17,10 @@ Riot Metro-Police behave the same as their regular counterparts.
 #### Credits
 Riot Shield model: Tactical Intervention
 
-
 ### Armored Soldier
 Late generation Combine infantry, hastily equipped with armor in a desperate attempt to combat the post-uprising human resistance.
+
+In addition to standard soldiers, there are also Shotgunner and Prison Guard variants.
 
 #### Equipment
 
@@ -57,6 +58,8 @@ NPC Model: https://gamebanana.com/mods/183076
 Weapon/Grenade Model: NeoTokyo, ported by Kali (https://steamcommunity.com/sharedfiles/filedetails/?id=146626186)
 Weapon/Grenade Sound: Tactical Intervention
 
+## Specialists
+These Combine units have non-standard attack methods and are even more threatening than Elites. They are best deployed sparingly alongside standard units.
 
 ### Eastern Dispatch Elite
 Elite variant of the Eastern Dispatch units, deployed to command Eastern Dispatch soldiers or as individual squads. Their unique weapon makes them a menace both up close and at range, and their presence will make Eastern Dispatch squads more tactically aware.
@@ -65,7 +68,8 @@ Elite variant of the Eastern Dispatch units, deployed to command Eastern Dispatc
 Eastern Elites have the same equipment as Eastern Dispatch units, plus the following:
 
 **ZR-68**: Flexible automatic rifle with underbarrel shotgun attached. When enemies are close, elites will fire the underbarrel weapon unless it is empty.
-- Compared to the AR2, the weapon is more accurate, but has slower bursts and a lower capacity.
+- Compared to the AR2, this weapon is more accurate, but has slower bursts and a lower capacity.
+- There is a brief aim time required to fire this weapon.
 - The underbarrel shotgun does the same damage as the SPAS-12 with bigger spread.
 
 **External Bodyplates**: Eastern Elites wear external armor on their thighs and left shoulder.
@@ -82,8 +86,6 @@ NPC Model: https://gamebanana.com/mods/183076
 Weapon Model: NeoTokyo and Tactical Intervention
 Weapon Sound: Tactical Intervention
 
-## Specialists
-These Combine units are much more threatening than standard units, akin to Hunters. They're best used sparingly and alongside larger amounts of standard units.
 
 ### Hemopathy Unit (Elite Metro-Police)
 Veteran Metropolitan operatives wearing sleek black and red uniforms and a skull-shaped breathing mask.
