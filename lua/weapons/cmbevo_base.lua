@@ -6,6 +6,8 @@ SWEP.Spawnable = false
 SWEP.WorldModel = "models/weapons/w_pist_usp.mdl"
 SWEP.HoldType = "pistol"
 
+SWEP.RenderGroup = RENDERGROUP_BOTH
+
 SWEP.Primary.ShootSound = "weapon_shotgun.single"
 SWEP.Secondary.ShootSound = "weapon_shotgun.single"
 
@@ -18,6 +20,13 @@ SWEP.Primary.Projectile = nil -- entity class
 SWEP.Primary.ProjectileVelocity = 1000
 SWEP.Primary.ProjectileVelocityOverDistance = 0.03
 SWEP.Primary.ProjectileArc = nil
+
+SWEP.Primary.AimTime = 0 -- Must lock onto target for this long before firing
+SWEP.Primary.AimTimeThreshold = nil -- If lock on time is longer than this, we won't cancel the shot anymore even if they go behind cover
+SWEP.Primary.AimBlindFireChance = 0.5 -- After a shot, this is the chance the NPC will be okay with shooting at cover
+
+SWEP.Primary.AimStartSound = "CMB_EVO.ChargeUp"
+SWEP.Primary.AimCancelSound = "CMB_EVO.ChargeEnd"
 
 SWEP.Primary.Tracer = 5
 SWEP.Primary.TracerName = "Tracer"
@@ -45,8 +54,27 @@ SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 
+
+function SWEP:SetupDataTables()
+    self:NetworkVar("Float", 0, "AimTime")
+    self:NetworkVar("Float", 1, "AimLostTime")
+    self:NetworkVar("Vector", 0, "AimVector")
+end
+
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType)
+
+    -- NPCs do not think on weapon, so think for them
+    if SERVER then
+        local t = "cmbevo_think_" .. self:EntIndex()
+        timer.Create(t, 0, 0, function()
+            if IsValid(self) and IsValid(self:GetOwner()) and self:GetOwner():GetActiveWeapon() == self and self:GetOwner():Health() > 0 then
+                self:Think()
+            elseif not IsValid(self) then
+                timer.Remove(t)
+            end
+        end)
+    end
 end
 
 function SWEP:Equip(owner)
@@ -70,7 +98,31 @@ end
 function SWEP:PrimaryAttack()
 
     if not self:CanPrimaryAttack() or self:GetNextPrimaryFire() > CurTime() then return end
-    self:EmitSound(self.Primary.ShootSound)
+
+    if self.Primary.AimTime > 0 then
+        if self:GetNextSecondaryFire() > CurTime() then
+            return
+        elseif self:GetAimTime() == 0 then
+            self:SetAimTime(CurTime())
+            self:SetAimLostTime(0)
+            self.AllowAimMiss = true
+
+            -- TODO lasers or something
+            --self:EmitSound(self.Primary.AimStartSound)
+            self.AimSound = CreateSound(self, self.Primary.AimStartSound)
+            self.AimSound:PlayEx(1, 85)
+            self.AimSound:ChangePitch(150, self.Primary.AimTime)
+            return
+        elseif CurTime() < self:GetAimTime() + self.Primary.AimTime then
+            return
+        end
+    end
+
+    -- self:SetAimTime(0)
+    -- self:SetAimLostTime(0)
+    if self.AimSound then
+        self.AimSound:Stop()
+    end
 
     local owner = self:GetOwner()
 
@@ -108,6 +160,7 @@ function SWEP:PrimaryAttack()
         owner:FireBullets(bullet)
     end
 
+    self:EmitSound(self.Primary.ShootSound)
     self:TakePrimaryAmmo(1)
     self:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
     if self.Primary.Delay < 0.1 then
@@ -131,7 +184,6 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
-
     if not self:CanSecondaryAttack() then return end
     self:EmitSound(self.Secondary.ShootSound)
 
@@ -168,6 +220,102 @@ function SWEP:SecondaryAttack()
     end
 end
 
+function SWEP:StopAim()
+    self:SetAimTime(0)
+    self:SetAimLostTime(0)
+    if self.AimSound then
+        self.AimSound:Stop()
+        self.AimSound = nil
+    end
+end
+
+function SWEP:Reload()
+    BaseClass.Reload(self)
+    self:StopAim()
+end
+
+function SWEP:Think()
+    if IsValid(self:GetOwner()) and self.Primary.AimTime > 0 and self:GetAimTime() > 0 and self:GetNextSecondaryFire() <= CurTime() then
+        if (not self.Primary.AimTimeThreshold or CurTime() <= self.GetAimTime() + self.Primary.AimTimeThreshold or (not self.AllowAimMiss and CurTime() >= self:GetAimTime() + self.Primary.AimTime)) and
+                (not IsValid(self:GetOwner():GetEnemy()) or not self:GetOwner():Visible(self:GetOwner():GetEnemy())) then
+            -- If can't see target for more than this amount of time, they are lost and we cancel the shot
+            if self:GetAimLostTime() == 0 then
+                self:SetAimLostTime(CurTime() + (self.AllowAimMiss and 0.12 or 0.25))
+            elseif self:GetAimLostTime() <= CurTime() then
+                self:StopAim()
+                if self.AllowAimMiss then
+                    self:EmitSound(self.Primary.AimCancelSound)
+                end
+            end
+        else
+            if self:GetAimLostTime() == 0 then
+                if IsValid(self:GetOwner():GetEnemy()) then
+                    self:SetAimVector((self:GetOwner():GetEnemy():EyePos() - self:GetOwner():GetShootPos()):GetNormalized())
+                else
+                    self:SetAimVector(self:GetOwner():GetAimVector())
+                end
+            end
+
+            if CurTime() >= self:GetAimTime() + self.Primary.AimTime then
+                if self:Clip1() > 0 and IsValid(self:GetOwner():GetEnemy()) and self:GetOwner():GetEnemy():Health() > 0 then
+                    if self:GetNextPrimaryFire() < CurTime() then
+                        self:PrimaryAttack()
+                        if math.random() > self.Primary.AimBlindFireChance then
+                            self.AllowAimMiss = false
+                        end
+                    end
+                else
+                    self:StopAim()
+                end
+            else
+                self:SetAimLostTime(0)
+            end
+        end
+    elseif self.Primary.AimTime > 0 then
+        self:StopAim()
+    end
+end
+
+if CLIENT then
+    local lasermat = Material("effects/laser1")
+    local flaremat = Material("effects/whiteflare")
+    local col2 = Color(200, 200, 200)
+    local col = Color(255, 0, 0)
+
+    function SWEP:DrawWorldModel(flag)
+        self:DrawModel(flags)
+    end
+
+    function SWEP:DrawWorldModelTranslucent(flag)
+        local owner = self:GetOwner()
+        if IsValid(owner) and self:GetAimTime() > 0 then
+            local att = self:GetAttachment(1)
+            local pos = att.Pos
+            local tr = util.TraceLine({
+                start = pos,
+                endpos = pos + (self:GetAimVector() * 5000), -- att.Ang:Forward()
+                mask = MASK_SHOT,
+                filter = self:GetOwner()
+            })
+
+            local strength = Lerp((CurTime() - self:GetAimTime()) / self.Primary.AimTime ^ 4, 0, 5)
+            render.SetMaterial(lasermat)
+            local width = math.Rand(0.4, 0.5) * strength
+            render.DrawBeam(tr.StartPos, tr.HitPos, width * 0.3, 0, 1, col2)
+            render.DrawBeam(tr.StartPos, tr.HitPos, width, 0, 1, col)
+
+            if tr.Hit and not tr.HitSky then
+                local rad = math.Rand(4, 6) * strength
+
+                render.SetMaterial(flaremat)
+                render.DrawSprite(tr.HitPos, rad, rad, col)
+                render.DrawSprite(tr.HitPos, rad * 0.3, rad * 0.3, col2)
+            end
+        end
+    end
+end
+
+
 function SWEP:GetCapabilities()
     return bit.bor(CAP_WEAPON_RANGE_ATTACK1, CAP_INNATE_RANGE_ATTACK1)
 end
@@ -190,5 +338,28 @@ function SWEP:GetNPCRestTimes()
     end
 end
 
-function SWEP:OnProjectileCreated(ent)
+function SWEP:OnRemove()
+    if self.AimSound then
+        self.AimSound:Stop()
+    end
 end
+
+function SWEP:OnProjectileCreated(ent) end
+
+sound.Add({
+    name = "CMB_EVO.ChargeUp",
+    channel = CHAN_WEAPON,
+    volume = 0.5,
+    level = 80,
+    pitch = 100,
+    sound = "weapons/physcannon/physcannon_charge.wav"
+})
+
+sound.Add({
+    name = "CMB_EVO.ChargeEnd",
+    channel = CHAN_WEAPON,
+    volume = 0.5,
+    level = 80,
+    pitch = 100,
+    sound = "weapons/physcannon/superphys_small_zap3.wav"
+})

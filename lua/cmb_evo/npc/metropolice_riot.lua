@@ -1,9 +1,8 @@
 -----------------------------------------------------------
--- Armored Elite Metropolice
--- Model Credits: DPotatoman, FaSale, FreeStylaLT (https://steamcommunity.com/sharedfiles/filedetails/?id=2005659006)
+-- Riot Police
 -----------------------------------------------------------
 
-NPC.Name = "Riot Metro-Police"
+NPC.Name = "Riot Police"
 NPC.Class = "npc_metropolice"
 NPC.Model = "models/cmb_evo/police_riot.mdl"
 NPC.Skin = 0
@@ -71,10 +70,6 @@ end
 function NPC:OnSpawn(ply)
     makeshield(self)
     self:RestartGesture(self:GetSequenceActivity(self:LookupSequence("gesture_shield")), true, false)
-end
-
-function NPC:Think()
-
 end
 
 

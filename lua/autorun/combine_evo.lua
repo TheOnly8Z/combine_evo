@@ -15,42 +15,47 @@ local function AddNPC(t, class)
 end
 local Category = "Combine Evo"
 
-local dir = "cmb_evo/npc/"
-local files = file.Find(dir .. "*.lua", "LUA")
-for _, filename in ipairs(files) do
-    NPC = {}
+local function LoadNPCS()
+    local dir = "cmb_evo/npc/"
+    local files = file.Find(dir .. "*.lua", "LUA")
+    for _, filename in ipairs(files) do
+        NPC = {}
 
-    include(dir .. filename)
-    AddCSLuaFile(dir .. filename)
+        include(dir .. filename)
+        AddCSLuaFile(dir .. filename)
 
-    local shortname = NPC.ShortName or string.sub(filename, 1, -5)
+        local shortname = NPC.ShortName or string.sub(filename, 1, -5)
 
-    NPC.ShortName = shortname
+        NPC.ShortName = shortname
 
-    CMBEVO.NPC[shortname] = NPC
+        CMBEVO.NPC[shortname] = NPC
 
-    if not NPC.Ignore then
-        NPC.KeyValues = NPC.KeyValues or {}
-        NPC.KeyValues["squadname"] = NPC.Squad or "cmb_evo"
-        NPC.KeyValues["parentname"] = "cmbevo_" .. shortname
+        if not NPC.Ignore then
+            NPC.KeyValues = NPC.KeyValues or {}
+            NPC.KeyValues["squadname"] = NPC.Squad or "cmb_evo"
+            NPC.KeyValues["parentname"] = "cmbevo_" .. shortname
 
-        AddNPC({
-            Name = NPC.Name,
-            Class = NPC.Class,
-            Category = NPC.Category or Category,
-            Model = NPC.Model,
-            Skin = NPC.Skin or 0,
-            Health = NPC.Health,
-            Weapons = NPC.Weapons,
-            SpawnFlags = NPC.SpawnFlags,
-            KeyValues = NPC.KeyValues,
-        }, "cmbevo_" .. shortname)
+            AddNPC({
+                Name = NPC.Name,
+                Class = NPC.Class,
+                Category = NPC.Category or Category,
+                Model = NPC.Model,
+                Skin = NPC.Skin or 0,
+                Health = NPC.Health,
+                Weapons = NPC.Weapons,
+                SpawnFlags = bit.bor(NPC.SpawnFlags or 0, 8192), -- "SF_NPC_NO_WEAPON_DROP"
+                KeyValues = NPC.KeyValues,
+            }, "cmbevo_" .. shortname)
 
-        if CLIENT then
-            language.Add(NPC.Name, NPC.Name)
+            if CLIENT then
+                language.Add(NPC.Name, NPC.Name)
+            end
         end
     end
+    NPC = {}
 end
+LoadNPCS()
+hook.Add("OnReloaded", "cmb_evo", LoadNPCS)
 
 -----------------------------------------------------------
 -- NPC Initialize Function
@@ -159,4 +164,149 @@ end
 function CMBEVO.GetTag(ent, tag)
     if not IsValid(ent) or not ent.CMBEVO_Tags then return nil end
     return ent.CMBEVO_Tags[tag]
+end
+
+-- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/server/h_ai.cpp#L214
+function CMBEVO.VecCheckThrow(ent, vecSpot1, vecSpot2, flSpeed, flGravityAdj, vecMins, vecMaxs)
+    local flGravity = GetConVar("sv_gravity"):GetFloat() * (flGravityAdj or 1)
+    local vecGrenadeVel = vecSpot2 - vecSpot1
+
+    -- throw at a constant time
+    local time =  vecGrenadeVel:Length() / flSpeed
+    vecGrenadeVel:Mul(1 / time)
+
+    -- adjust upward toss to compensate for gravity loss
+    vecGrenadeVel.z = vecGrenadeVel.z + flGravity * time * 0.5
+
+    local vecApex = vecSpot1 + (vecSpot2 - vecSpot1) * 0.5
+    vecApex.z = vecApex.z + 0.5 * flGravity * (time * 0.5) * (time * 0.5)
+
+    local tr = util.TraceLine({
+        start = vecSpot1,
+        endpos = vecApex,
+        mask = MASK_SOLID,
+        filter = ent,
+    })
+    if tr.Fraction < 1 then
+        return false -- epic fail
+    end
+
+    local tr2 = util.TraceLine({
+        start = vecSpot2,
+        endpos = vecApex,
+        mask = MASK_SOLID_BRUSHONLY,
+        filter = ent,
+    })
+    if tr2.Fraction < 1 then
+        return false -- epic fail
+    end
+
+    if vecMins and vecMaxs then
+        local tr3 = util.TraceLine({
+            start = vecSpot1,
+            endpos = vecApex,
+            mask = MASK_SOLID,
+            mins = vecMins,
+            maxs = vecMaxs,
+            filter = ent,
+        })
+        if tr3.Fraction < 1 then
+            return false
+        end
+    end
+
+    return vecGrenadeVel
+end
+
+-- https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/server/h_ai.cpp#L78
+function CMBEVO.VecCheckToss(ent, vecSpot1, vecSpot2, flHeightMaxRatio, flGravityAdj, bRandomize, vecMins, vecMaxs)
+    local flGravity = GetConVar("sv_gravity"):GetFloat() * (flGravityAdj or 1)
+
+    if vecSpot2.z - vecSpot1.z > 500 then
+        return false -- "to high"
+    end
+
+    -- toss a little bit to the left or right, not right down on the enemy's bean (head).
+    if bRandomize then
+        vecSpot2 = vecSpot2 + ent:GetRight() * math.Rand(-24, 24) + ent:GetForward() * math.Rand(-24, 24)
+    end
+
+    -- calculate the midpoint and apex of the 'triangle'
+    -- UNDONE: normalize any Z position differences between spot1 and spot2 so that triangle is always RIGHT
+    -- get a rough idea of how high it can be thrown
+    local vecMidPoint = vecSpot1 + (vecSpot2 - vecSpot1) * 0.5
+
+    local tr0 = util.TraceLine({
+        start = vecMidPoint,
+        endpos = vecMidPoint + Vector(0, 0, 300),
+        mask = MASK_SOLID_BRUSHONLY,
+        filter = filter,
+    })
+    vecMidPoint = tr0.HitPos
+    if tr0.Fraction < 1 then
+        vecMidPoint.z = vecMidPoint.z - 15
+    end
+    if flHeightMaxRatio ~= -1 then
+        -- But don't throw so high that it looks silly. Maximize the height of the
+        -- throw above the highest of the two endpoints to a ratio of the throw length.
+    end
+
+    if vecMidPoint.z < vecSpot1.z or vecMidPoint.z < vecSpot2.z then
+        return false
+    end
+
+    local distance1 = (vecMidPoint.z - vecSpot1.z)
+    local distance2 = (vecMidPoint.z - vecSpot2.z)
+
+    local time1 = math.sqrt(distance1 / (0.5 * flGravity))
+    local time2 = math.sqrt(distance2 / (0.5 * flGravity))
+
+    if time1 < 0.1 then return false end
+
+    -- how hard to throw sideways to get there in time.
+    local vecTossVel = (vecSpot2 - vecSpot1) / (time1 + time2)
+    vecTossVel.z = flGravity * time1
+
+    local vecApex = vecSpot1 + vecTossVel * time1
+    vecApex.z = vecMidPoint.z
+
+    -- JAY: Repro behavior from HL1 -- toss check went through gratings
+    -- well that's stupid so im not doing that
+    --[[]
+    local tr = util.TraceLine({
+        start = vecSpot1,
+        endpos = vecApex,
+        mask = MASK_SOLID,
+        filter = ent,
+    })
+    if tr.Fraction < 1 then
+        return false -- epic fail
+    end
+
+    local tr2 = util.TraceLine({
+        start = vecSpot2,
+        endpos = vecApex,
+        mask = MASK_SOLID_BRUSHONLY,
+        filter = ent,
+    })
+    if tr2.Fraction < 1 then
+        return false -- epic fail
+    end
+
+    if vecMins and vecMaxs then
+        local tr3 = util.TraceLine({
+            start = vecSpot1,
+            endpos = vecApex,
+            mask = MASK_SOLID,
+            mins = vecMins,
+            maxs = vecMaxs,
+            filter = ent,
+        })
+        if tr3.Fraction < 1 then
+            return false
+        end
+    end
+    ]]
+
+    return vecTossVel
 end
