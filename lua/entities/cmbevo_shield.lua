@@ -20,13 +20,14 @@ end
 if SERVER then
     function ENT:Initialize()
         self:SetModel(self.Model)
-        self:PhysicsInit(SOLID_VPHYSICS)
+        -- self:PhysicsInit(SOLID_VPHYSICS)
         self:SetMoveType( MOVETYPE_NONE )
+        self:PhysicsInitBox(Vector(2, -16, -1.36), Vector(8, 16, 53.52), "metal")
         self:SetCollisionBounds(self.CollisionBoundsMin, self.CollisionBoundsMax)
         self:DrawShadow(false)
         self:AddEFlags(EFL_DONTBLOCKLOS)
         self:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-        self.mmRHAe = 0.1
+        self.mmRHAe = 0.35
         -- self:EnableCustomCollisions(true)
     end
 
