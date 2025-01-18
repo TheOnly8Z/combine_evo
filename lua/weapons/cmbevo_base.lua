@@ -242,7 +242,7 @@ end
 
 function SWEP:Think()
     if IsValid(self:GetOwner()) and self.Primary.AimTime > 0 and self:GetAimTime() > 0 and self:GetNextSecondaryFire() <= CurTime() then
-        if (not self.Primary.AimTimeThreshold or CurTime() <= self.GetAimTime() + self.Primary.AimTimeThreshold or (not self.AllowAimMiss and CurTime() >= self:GetAimTime() + self.Primary.AimTime)) and
+        if (not self.Primary.AimTimeThreshold or CurTime() <= self.GetAimTime() + self.Primary.AimTimeThreshold or (not self.AllowAimMiss or CurTime() >= self:GetAimTime() + self.Primary.AimTime)) and
                 (not IsValid(self:GetOwner():GetEnemy()) or not self:GetOwner():Visible(self:GetOwner():GetEnemy())) then
             -- If can't see target for more than this amount of time, they are lost and we cancel the shot
             if self:GetAimLostTime() == 0 then
@@ -263,15 +263,10 @@ function SWEP:Think()
             end
 
             if CurTime() >= self:GetAimTime() + self.Primary.AimTime then
-                if self:Clip1() > 0 and IsValid(self:GetOwner():GetEnemy()) and self:GetOwner():GetEnemy():Health() > 0 then
-                    --[[]
+                if self.AllowAimMiss and self:Clip1() > 0 and IsValid(self:GetOwner():GetEnemy()) and self:GetOwner():GetEnemy():Health() > 0 and self:GetOwner():Visible(self:GetOwner():GetEnemy()) then
                     if self:GetNextPrimaryFire() < CurTime() then
                         self:PrimaryAttack()
-                        if math.random() > self.Primary.AimBlindFireChance then
-                            self.AllowAimMiss = false
-                        end
                     end
-                    ]]
                 else
                     self:StopAim()
                 end
