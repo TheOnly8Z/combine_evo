@@ -9,7 +9,9 @@ Metropolitan enforcers armed with riot shields to combat whatever makeshift mele
 
 #### Equipment
 
-**Riot Shield**: See-through shield held with the left arm. Despite its frail appearance, it can withstand most conventional projectiles and melee attacks. Fortunately, it is far too bulky to humans to use it together with firearms, so Riot Metro-Police are armed with Stun Batons instead.
+**Riot Shield**: Lightweight shield used on the off-hand alongside standard Stun Batons. Blocks most bullets and melee attacks, but can be destroyed with enough damage.
+- Damaging the shield may cause the shield user to flinch. The stronger the attack, the more likely this happens.
+- Shotguns are especially effective at shattering the shield, while melee weapons are very ineffective.
 
 #### Tactics
 Riot Metro-Police behave the same as their regular counterparts.
