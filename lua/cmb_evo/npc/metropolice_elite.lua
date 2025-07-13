@@ -23,14 +23,18 @@ function NPC:OnSpawn(ply)
     -- This is BEFORE sandbox's 25% limb damage multiplier
     local armor_chest = GetConVar("cmbevo_armored_chest")
     local armor_limbs = GetConVar("cmbevo_armored_limbs")
+    timer.Simple(0, function()
+        local max = self:GetMaxHealth()
+        local limb = math.Round(max * armor_limbs:GetFloat())
+        self.CmbEvoArmor = {
+            [HITGROUP_CHEST] = max * armor_chest:GetFloat(),
+            [HITGROUP_LEFTARM_ARMOR] = limb,
+            [HITGROUP_RIGHTARM_ARMOR] = limb,
+            [HITGROUP_LEFTLEG_ARMOR] = limb,
+            [HITGROUP_RIGHTLEG_ARMOR] = limb,
+        }
+    end)
 
-    self.CmbEvoArmor = {
-        [HITGROUP_CHEST] = armor_chest:GetInt(),
-        [HITGROUP_LEFTARM_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_RIGHTARM_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_LEFTLEG_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_RIGHTLEG_ARMOR] = armor_limbs:GetInt(),
-    }
     self.CmbEvoArmorBodygroup = {
         [HITGROUP_CHEST] = 2,
         [HITGROUP_LEFTARM_ARMOR] = 3,

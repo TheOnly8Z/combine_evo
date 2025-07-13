@@ -20,8 +20,10 @@ ENT.TimeFuse = false
 ENT.ImpactFuse = false
 ENT.StickyFuse = false
 
+
 ENT.RemoveOnImpact = false
 ENT.ExplodeOnImpact = false
+ENT.ExplodeOnImpactLiving = false
 ENT.ExplodeOnDamage = false
 ENT.ExplodeUnderwater = false
 
@@ -144,9 +146,10 @@ function ENT:PhysicsCollide(data, collider)
             return
         end
 
-        if self.Delay == 0 or self.ExplodeOnImpact then
+        if self.Delay == 0 or self.ExplodeOnImpact or (self.ExplodeOnImpactLiving and (IsValid(data.HitEntity) and (data.HitEntity:IsNPC() or data.HitEntity:IsNextBot() or data.HitEntity:IsPlayer()))) then
             self:SetPos(data.HitPos)
             self:PreDetonate()
+            return
         end
     elseif !self.ImpactFuse then
         self:Impact(data, collider)
@@ -235,7 +238,6 @@ function ENT:Impact()
 end
 
 function ENT:Stuck()
-
 end
 
 function ENT:DrawTranslucent()

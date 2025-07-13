@@ -3,8 +3,8 @@
 -- Model Credits: Magic Nipples (https://steamcommunity.com/workshop/filedetails/?id=1122693988)
 -----------------------------------------------------------
 
-local armor_chest = CreateConVar("cmbevo_armored_chest", 50, FCVAR_ARCHIVE, "[Armored Soldier] Durability of chest armor.", 1)
-local armor_limbs = CreateConVar("cmbevo_armored_limbs", 35, FCVAR_ARCHIVE, "[Armored Soldier] Durability of limb armor.", 1)
+local armor_chest = CreateConVar("cmbevo_armored_chest", 1, FCVAR_ARCHIVE, "[Armored Soldier] Durability of chest armor, as a multiplier of max health.", 0)
+local armor_limbs = CreateConVar("cmbevo_armored_limbs", 0.666667, FCVAR_ARCHIVE, "[Armored Soldier] Durability of limb armor, as a multiplier of max health.", 0)
 
 NPC.Name = "Armored Soldier"
 NPC.Class = "npc_combine_s"
@@ -24,13 +24,18 @@ local HITGROUP_RIGHTLEG_ARMOR = 14
 
 function NPC:OnSpawn(ply)
     -- This is BEFORE sandbox's 25% limb damage multiplier
-    self.CmbEvoArmor = {
-        [HITGROUP_CHEST] = armor_chest:GetInt(),
-        [HITGROUP_LEFTARM_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_RIGHTARM_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_LEFTLEG_ARMOR] = armor_limbs:GetInt(),
-        [HITGROUP_RIGHTLEG_ARMOR] = armor_limbs:GetInt(),
-    }
+    timer.Simple(0, function()
+        local max = self:GetMaxHealth()
+        local limb = math.Round(max * armor_limbs:GetFloat())
+        self.CmbEvoArmor = {
+            [HITGROUP_CHEST] = max * armor_chest:GetFloat(),
+            [HITGROUP_LEFTARM_ARMOR] = limb,
+            [HITGROUP_RIGHTARM_ARMOR] = limb,
+            [HITGROUP_LEFTLEG_ARMOR] = limb,
+            [HITGROUP_RIGHTLEG_ARMOR] = limb,
+        }
+    end)
+
     self.CmbEvoArmorBodygroup = {
         [HITGROUP_CHEST] = 1,
         [HITGROUP_LEFTARM_ARMOR] = 2,
@@ -103,7 +108,7 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
             local dmg = dmginfo:GetDamage()
             local dmg_to_hp
             if IsValid(inflictor) and inflictor.ArcticTacRP then
-                dmg_to_hp = dmg * math.max(inflictor:GetValue("ArmorPenetration") - 0.4, 0) * 2
+                dmg_to_hp = dmg * math.Clamp(math.max(inflictor:GetValue("ArmorPenetration") - 0.66667, 0) * 3, 0, 1)
                 dmg = (dmg - dmg_to_hp) * inflictor:GetValue("ArmorBonus")
             else
                 if dmginfo:IsDamageType(DMG_BUCKSHOT) then
@@ -119,11 +124,19 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
             ent.CmbEvoArmor[hitgroup] = ent.CmbEvoArmor[hitgroup] - dmg
 
             local dir = dmginfo:GetDamageForce():GetNormalized()
+
+            if dmg_to_hp <= 0 then
+                -- don't play bleed effects since we weren't hurt
+                ent.CmbEvoBlockDamage = true
+            end
+
             local eff = EffectData()
             eff:SetOrigin(dmginfo:GetDamagePosition() - dir)
             eff:SetNormal(-dir)
-            util.Effect("MetalSpark", eff)
 
+            if dmg > 0 then
+                util.Effect("MetalSpark", eff)
+            end
 
             if ent.CmbEvoArmor[hitgroup] <= 0 then
                 -- broken!

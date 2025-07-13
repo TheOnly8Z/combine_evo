@@ -2,7 +2,7 @@
 -- Riot Police
 -----------------------------------------------------------
 
-local shield_health = CreateConVar("cmbevo_riot_shield_health", 70, FCVAR_ARCHIVE, "[Riot Police] Durability of riot shield. 0 - Unbreakable.", 0)
+local shield_health = CreateConVar("cmbevo_riot_shield_health", 3, FCVAR_ARCHIVE, "[Riot Police] Durability of riot shield, as a multiplier of the NPC's health. 0 - Unbreakable.", 0)
 
 NPC.Name = "Riot Police"
 NPC.Class = "npc_metropolice"
@@ -22,8 +22,9 @@ local function makeshield(self)
         self.CmbEvoShield:Activate()
         self.CmbEvoShield:AddEFlags( EFL_DONTBLOCKLOS )
 
-        self.CmbEvoShield:SetMaxHealth(shield_health:GetInt())
-        self.CmbEvoShield:SetHealth(shield_health:GetInt())
+        local hp = self:GetMaxHealth() * shield_health:GetFloat()
+        self.CmbEvoShield:SetMaxHealth(hp)
+        self.CmbEvoShield:SetHealth(hp)
 
         self.CmbEvoShield:PhysicsInit( SOLID_NONE )
         self.CmbEvoShield:SetMoveType( MOVETYPE_NONE )

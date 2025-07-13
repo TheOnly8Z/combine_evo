@@ -6,9 +6,10 @@ ENT.Model                    = "models/Combine_Helicopter/helicopter_bomb01.mdl"
 ENT.RenderGroup              = RENDERGROUP_BOTH
 
 ENT.InstantFuse = false
-ENT.ImpactFuse = false
+ENT.ImpactFuse = true
 ENT.StickyFuse = true
-ENT.Delay = 0.25
+ENT.ExplodeOnImpactLiving = true
+ENT.Delay = 0.5
 
 ENT.Sticky = true
 
@@ -35,7 +36,7 @@ end
 function ENT:Detonate()
     local attacker = IsValid(self:GetOwner()) and self:GetOwner() or self
 
-    util.BlastDamage(self, attacker, self:GetPos(), 180, 15)
+    util.BlastDamage(self, attacker, self:GetPos(), 200, 20)
 
     local fx = EffectData()
     fx:SetOrigin(self:GetPos())
@@ -46,7 +47,12 @@ function ENT:Detonate()
         util.Effect("HelicopterMegaBomb", fx)
     end
 
-    self:EmitSound(table.Random(self.ExplodeSounds), 110, 120)
+    self:EmitSound(table.Random(self.ExplodeSounds), 100, 120)
+end
+
+function ENT:Stuck()
+    self:EmitSound("buttons/combine_button_locked.wav", 80, 130)
+    self:SetNWFloat("Stuck", CurTime())
 end
 
 function ENT:Draw()
@@ -60,5 +66,10 @@ end
 local glow = Material("sprites/light_glow02_add")
 function ENT:DrawTranslucent()
     render.SetMaterial(glow)
-    render.DrawSprite(self:GetPos(), 32, 32, clr)
+    local s = 32
+    if self:GetNWFloat("Stuck", 0) > 0 then
+        s = 32 + 96 * math.min(CurTime() - self:GetNWFloat("Stuck", 0), self.Delay)
+    end
+    render.DrawSprite(self:GetPos(), s, s, clr)
+
 end

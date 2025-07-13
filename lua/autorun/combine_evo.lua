@@ -2,12 +2,43 @@ AddCSLuaFile()
 
 CMBEVO = {}
 
+if SERVER then
+    CMBEVO.CombineClasses = {
+        [CLASS_COMBINE] = true,
+        [CLASS_COMBINE_GUNSHIP] = true,
+        [CLASS_MANHACK] = true,
+        [CLASS_METROPOLICE] = true,
+        [CLASS_SCANNER] = true,
+    }
+end
+CMBEVO.CombineFriendlyEntities = {
+    "npc_combine_s",
+    "npc_advisor",
+    "npc_turret_floor",
+    "npc_rollermine",
+    "npc_turret_ground",
+    "npc_turret_ceiling",
+    "npc_strider",
+    "npc_combinegunship",
+    "npc_combinedropship",
+    "npc_helicopter",
+    "npc_metropolice",
+    "npc_manhack",
+    "npc_combine_camera",
+    "npc_cscanner",
+    "npc_clawscanner",
+    "npc_stalker",
+    "npc_sniper",
+}
+
 -----------------------------------------------------------
 -- Load NPC modules
 -----------------------------------------------------------
 CMBEVO.NPC = {}
 
-CMBEVO.NPC_Cache = {}
+CMBEVO.NPC_Cache = CMBEVO.NPC_Cache or {}
+CMBEVO.NPC_Cache_ForceCombine = CMBEVO.NPC_Cache_ForceCombine or {}
+CMBEVO.NPC_Cache_NaturalCombine = CMBEVO.NPC_Cache_NaturalCombine or {}
 
 local function AddNPC(t, class)
     list.Set("NPC", class or t.Class, t)
@@ -28,30 +59,35 @@ local function LoadNPCS()
         NPC.ShortName = shortname
 
         CMBEVO.NPC[shortname] = NPC
+    end
+    NPC = {}
+    for shortname, data in pairs(CMBEVO.NPC) do
+        if data.Base and CMBEVO.NPC[data.Base] then
+            setmetatable(data, {__index = CMBEVO.NPC[data.Base]})
+        end
 
-        if not NPC.Ignore then
-            NPC.KeyValues = NPC.KeyValues or {}
-            NPC.KeyValues["squadname"] = NPC.Squad or "cmb_evo"
-            NPC.KeyValues["parentname"] = "cmbevo_" .. shortname
+        if not data.Ignore then
+            data.KeyValues = data.KeyValues or {}
+            data.KeyValues["squadname"] = data.Squad or "cmb_evo"
+            data.KeyValues["parentname"] = "cmbevo_" .. shortname
 
             AddNPC({
-                Name = NPC.Name,
-                Class = NPC.Class,
-                Category = NPC.Category or Category,
-                Model = NPC.Model,
-                Skin = NPC.Skin or 0,
-                Health = NPC.Health,
-                Weapons = NPC.Weapons,
-                SpawnFlags = bit.bor(NPC.SpawnFlags or 0, 8192), -- "SF_NPC_NO_WEAPON_DROP"
-                KeyValues = NPC.KeyValues,
+                Name = data.Name,
+                Class = data.Class,
+                Category = data.Category or Category,
+                Model = data.Model,
+                Skin = data.Skin or 0,
+                Health = data.Health,
+                Weapons = data.Weapons,
+                SpawnFlags = bit.bor(data.SpawnFlags or 0, 8192), -- "SF_NPC_NO_WEAPON_DROP"
+                KeyValues = data.KeyValues,
             }, "cmbevo_" .. shortname)
 
             if CLIENT then
-                language.Add(NPC.Name, NPC.Name)
+                language.Add(data.Name, data.Name)
             end
         end
     end
-    NPC = {}
 end
 LoadNPCS()
 hook.Add("OnReloaded", "cmb_evo", LoadNPCS)
@@ -80,8 +116,23 @@ if SERVER then
             ent:SetCurrentWeaponProficiency(data.Proficiency)
         end
 
+        if data.Health then
+            ent:SetMaxHealth(data.Health)
+            ent:SetHealth(data.Health)
+        end
+
         if isfunction(data.OnSpawn) then
             data.OnSpawn(ent)
+        end
+
+        if data.ForceCombine then
+            table.insert(CMBEVO.NPC_Cache_ForceCombine, ent)
+            for i, npc in ipairs(CMBEVO.NPC_Cache_NaturalCombine) do
+                if not IsValid(npc) then table.remove(CMBEVO.NPC_Cache_NaturalCombine, i) continue end
+                print("friendship between forced combine " .. tostring(ent) .. " and natural combine " .. tostring(npc))
+                ent:AddEntityRelationship(npc, D_LI, 9999)
+                npc:AddEntityRelationship(ent, D_LI, 9999)
+            end
         end
 
         CMBEVO.NPC_Cache[shortname] = CMBEVO.NPC_Cache[shortname] or {}
@@ -89,7 +140,6 @@ if SERVER then
     end
 
     hook.Add("OnEntityCreated", "cmb_evo", function(ent)
-
         if ent:GetClass() == "npc_grenade_frag" then
             timer.Simple(0, function()
                 if not IsValid(ent) then return end
@@ -123,6 +173,15 @@ if SERVER then
                 if string.Left(name, 7) == "cmbevo_" then
                     CMBEVO.InitializeNPC(ent, string.sub(name, 8))
                 end
+                if CMBEVO.CombineClasses[ent:Classify()] then
+                    table.insert(CMBEVO.NPC_Cache_NaturalCombine, ent)
+                    for i, npc in ipairs(CMBEVO.NPC_Cache_ForceCombine) do
+                        if not IsValid(npc) then table.remove(CMBEVO.NPC_Cache_ForceCombine, i) continue end
+                        print("friendship between forced combines " .. tostring(ent) .. " and " .. tostring(npc))
+                        ent:AddEntityRelationship(npc, D_LI, 9999)
+                        npc:AddEntityRelationship(ent, D_LI, 9999)
+                    end
+                end
             end)
         end
     end)
@@ -148,11 +207,35 @@ if SERVER then
         if ent.CMBEVO_ShortName ~= nil and ent.CMBEVO_ShortName == dmginfo:GetAttacker().CMBEVO_ShortName and dmginfo:IsBulletDamage() then
             return true
         end
+
+        if ent.CmbEvoBlockDamage and dmginfo:GetDamage() <= 0 then
+            ent.CmbEvoBlockDamage = nil
+            return true
+        end
+
+        local attacker = dmginfo:GetAttacker()
+
+        if IsValid(attacker) and attacker.CMBEVO_ShortName and CMBEVO.NPC[attacker.CMBEVO_ShortName].DamageScale then
+            dmginfo:ScaleDamage(CMBEVO.NPC[attacker.CMBEVO_ShortName].DamageScale)
+        end
+
+        if ent.CMBEVO_ShortName and isfunction(CMBEVO.NPC[ent.CMBEVO_ShortName].OnTakeDamage) then
+            local ret = CMBEVO.NPC[ent.CMBEVO_ShortName].OnTakeDamage(ent, dmginfo)
+            if ret ~= nil then
+                return ret
+            end
+        end
     end)
 
     hook.Add("OnNPCKilled", "cmb_evo", function(ent, attacker, inflictor)
         if ent.CMBEVO_ShortName and isfunction(CMBEVO.NPC[ent.CMBEVO_ShortName].OnDeath) then
             CMBEVO.NPC[ent.CMBEVO_ShortName].OnDeath(ent, attacker, inflictor)
+        end
+    end)
+
+    hook.Add("ScaleNPCDamage", "cmb_evo", function(ent, hitgroup, dmginfo)
+        if ent.CMBEVO_ShortName and isfunction(CMBEVO.NPC[ent.CMBEVO_ShortName].OnScaleDamage) then
+            CMBEVO.NPC[ent.CMBEVO_ShortName].OnScaleDamage(ent, hitgroup, dmginfo)
         end
     end)
 end

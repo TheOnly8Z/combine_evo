@@ -5,14 +5,14 @@ SWEP.Base = "cmbevo_base"
 SWEP.PrintName = "Frag Launcher"
 
 SWEP.WorldModel = "models/weapons/w_rocket_launcher.mdl"
-SWEP.HoldType = "smg"
+SWEP.HoldType = "shotgun"
 
 SWEP.Primary.ShootSound = "CMB_EVO.FragLauncher.Fire"
 
 SWEP.Primary.Damage = 3
 SWEP.Primary.Num = 1
 SWEP.Primary.Cone = 0.1
-SWEP.Primary.Delay = 0.3
+SWEP.Primary.Delay = 0.5
 SWEP.Primary.Tracer = 0
 SWEP.Primary.TracerName = "Tracer"
 SWEP.Primary.EjectName = false
@@ -21,6 +21,8 @@ SWEP.Primary.Projectile = "cmbevo_nade_gren"
 SWEP.Primary.ProjectileVelocity = 400
 SWEP.Primary.ProjectileVelocityOverDistance = 0.5
 SWEP.Primary.ProjectileArc = 20
+SWEP.Primary.ProjectileSafety = true
+SWEP.Primary.ProjectileSafetyDistance = 328
 
 SWEP.SpreadFromProficiency = {15, 24}
 SWEP.BurstSettings = {3, 6, 0.3}
@@ -53,5 +55,5 @@ end
 
 function SWEP:OnProjectileCreated(ent)
     ent:Fire("SetTimer", 3)
-    ent:GetPhysicsObject():SetAngleVelocityInstantaneous(VectorRand() * 300)
+    ent:GetPhysicsObject():SetAngleVelocityInstantaneous(VectorRand() * 512)
 end

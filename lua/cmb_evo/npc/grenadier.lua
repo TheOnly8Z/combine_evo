@@ -33,7 +33,7 @@ function NPC:Think()
             -- Generate a helper point entity to point it.
             local tgtname = "cmbevo_throwtgt_" .. self:EntIndex()
             local tgt = ents.Create("info_target")
-            tgt:SetPos((self:GetEnemy():GetPos() - self:GetPos()) / 2 + self:GetPos())
+            tgt:SetPos((self:GetEnemy():GetPos() - self:GetPos()) / 4 + self:GetPos())
             tgt:SetKeyValue("targetname", tgtname)
             tgt:Spawn()
             SafeRemoveEntityDelayed(tgt, 1)

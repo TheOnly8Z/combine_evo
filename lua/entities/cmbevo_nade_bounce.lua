@@ -7,7 +7,7 @@ ENT.RenderGroup              = RENDERGROUP_BOTH
 
 ENT.InstantFuse = false
 ENT.ImpactFuse = true
-ENT.Delay = 0
+ENT.Delay = 0.5
 
 ENT.Sticky = false
 
@@ -29,33 +29,37 @@ function ENT:OnInitialize()
 end
 
 function ENT:Detonate()
-    local attacker = IsValid(self:GetOwner()) and self:GetOwner() or self
+    -- local attacker = IsValid(self:GetOwner()) and self:GetOwner() or self
+    -- util.BlastDamage(self, attacker, self:GetPos(), 328, 25)
 
-    -- util.BlastDamage(self, attacker, self:GetPos(), 328, 5)
+    local fx = EffectData()
+    -- fx:SetMagnitude(10)
+    -- fx:SetScale(1)
+    fx:SetEntity(self)
 
     for _, ent in pairs(ents.FindInSphere(self:GetPos(), 328)) do
         if not IsValid(ent:GetPhysicsObject()) then continue end
         local tr = util.TraceLine({
-            start = ent:GetPos(),
+            start = ent:WorldSpaceCenter(),
             endpos = self:GetPos(),
             filter = {self, ent},
             mask = MASK_SHOT
         })
         if tr.Fraction == 1 then
-            local f = Lerp((ent:GetPos() - self:GetPos()):Length() / 328, 1, 0.5)
+            local f = Lerp(((ent:GetPos() - self:GetPos()):Length() / 328) ^ 2, 1, 0.25)
             if ent:IsNPC() or ent:IsPlayer() then
+                -- if ent:IsPlayer() then
+                --     ent:ScreenFade(SCREENFADE.IN, Color(255, 255, 150, 75), 0.25, 0.1)
+                -- end
                 ent:SetVelocity((ent:GetPos() - self:GetPos()):GetNormalized() * f * (ent:IsOnGround() and 1 or 0.1) * (ent == self:GetOwner() and 2000 or 750) + Vector(0, 0, 350))
-            else
+            elseif (ent:GetPhysicsObject():GetVolume() or 0) >= 32 then
                 ent:GetPhysicsObject():ApplyForceCenter((ent:GetPos() - self:GetPos()):GetNormalized() * f * 2000)
             end
+
+            fx:SetOrigin(ent:WorldSpaceCenter())
+            util.Effect("PhyscannonImpact", fx)
         end
     end
-
-    local fx = EffectData()
-    fx:SetOrigin(self:GetPos())
-    fx:SetRadius(256)
-    util.Effect("AR2Explosion", fx)
-
 
     self:EmitSound(table.Random(self.ExplodeSounds), 110, 90)
 end

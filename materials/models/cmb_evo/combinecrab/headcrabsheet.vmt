@@ -1,0 +1,15 @@
+"VertexLitGeneric"
+{
+    "$baseTexture" "models/cmb_evo/combinecrab/headcrabsheet"
+    "$bumpmap" "models/cmb_evo/combinecrab/headcrabsheet_normal"
+    "$model" "1"
+
+    "$phong"     "1"
+    "$phongexponent"   "35"
+    "$phongboost"   "10"
+    "$phongfresnelranges"   "[.5 .8 1]"
+
+    "$rimlight" "1"
+    "$rimlightexponent" "8"
+    "$rimlightboost" "2"
+}

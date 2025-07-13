@@ -26,10 +26,19 @@ local HITGROUP_LEFTLEG_ARMOR = 13
 local HITGROUP_RIGHTLEG_ARMOR = 14
 
 function NPC:OnSpawn(ply)
-    self.CmbEvoArmor = {
-        [HITGROUP_LEFTARM_ARMOR] = 25,
-        [HITGROUP_LEFTLEG_ARMOR] = 25,
-        [HITGROUP_RIGHTLEG_ARMOR] = 25,
+    timer.Simple(0, function()
+        local max = self:GetMaxHealth()
+        local limb = math.Round(max * GetConVar("cmbevo_armored_limbs"):GetFloat())
+        self.CmbEvoArmor = {
+            [HITGROUP_LEFTARM_ARMOR] = limb,
+            [HITGROUP_LEFTLEG_ARMOR] = limb,
+            [HITGROUP_RIGHTLEG_ARMOR] = limb,
+        }
+    end)
+    self.CmbEvoArmorBodygroup = {
+        [HITGROUP_LEFTARM_ARMOR] = 1,
+        [HITGROUP_LEFTLEG_ARMOR] = 2,
+        [HITGROUP_RIGHTLEG_ARMOR] = 3,
     }
 
     -- Elites will shoot ar2 balls instead of throwing grenades, and drop them on death.

@@ -45,6 +45,13 @@ SWEP.Primary.DefaultClip = 8
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "pistol"
 
+SWEP.Primary.Projectile = nil
+SWEP.Primary.ProjectileVelocity = nil
+SWEP.Primary.ProjectileVelocityOverDistance = nil
+SWEP.Primary.ProjectileArc = nil
+SWEP.Primary.ProjectileSafety = nil
+SWEP.Primary.ProjectileSafetyDistance = nil
+
 SWEP.Secondary.Damage = 5
 SWEP.Secondary.Num = 8
 SWEP.Secondary.Cone = 0.04
@@ -101,6 +108,7 @@ end
 function SWEP:PrimaryAttack()
 
     if not self:CanPrimaryAttack() or self:GetNextPrimaryFire() > CurTime() then return end
+    local owner = self:GetOwner()
 
     if self.Primary.AimTime > 0 then
         if self:GetNextSecondaryFire() > CurTime() then
@@ -121,6 +129,21 @@ function SWEP:PrimaryAttack()
         end
     end
 
+    if self.Primary.Projectile and self.Primary.ProjectileSafety then
+        local tr = util.TraceHull({
+            start = owner:GetShootPos(),
+            endpos = owner:GetShootPos() + owner:GetAimVector() * self.Primary.ProjectileSafetyDistance,
+            mask = MASK_SOLID,
+            filter = {owner},
+            mins = Vector(-1, -1, -1),
+            maxs = Vector(1, 1, 1),
+        })
+        if tr.Fraction < 1 then
+            self:SetNextPrimaryFire(CurTime() + 0.25)
+            return
+        end
+    end
+
     -- self:SetAimTime(0)
     -- self:SetAimLostTime(0)
     if self.AimSound then
@@ -130,7 +153,6 @@ function SWEP:PrimaryAttack()
         self.AllowAimMiss = false
     end
 
-    local owner = self:GetOwner()
 
     if self.Primary.Projectile then
         local ang = owner:GetAimVector():Angle()

@@ -27,7 +27,7 @@ if SERVER then
         self:DrawShadow(false)
         self:AddEFlags(EFL_DONTBLOCKLOS)
         self:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-        self.mmRHAe = 0.35
+        self.mmRHAe = 0.75
         -- self:EnableCustomCollisions(true)
     end
 
@@ -79,9 +79,9 @@ if SERVER then
         if IsValid(inflictor) and inflictor:IsPlayer() and IsValid(attacker:GetActiveWeapon()) then
             inflictor = attacker:GetActiveWeapon()
         end
-        if inflictor.ArcticTacRP then
-            dmginfo:ScaleDamage(inflictor:GetValue("ArmorBonus"))
-        end
+        -- if inflictor.ArcticTacRP then
+        --     dmginfo:ScaleDamage(inflictor:GetValue("ArmorBonus"))
+        -- end
 
         -- Resist buckshot and melee
         if dmginfo:IsDamageType(DMG_CLUB) or dmginfo:IsDamageType(DMG_SLASH) or dmginfo:GetDamageType() == DMG_GENERIC then
@@ -95,9 +95,9 @@ if SERVER then
             self:OnDestroyed()
         else
             self:EmitSound("physics/glass/glass_impact_bullet" .. math.random(1, 4) .. ".wav", 70, Lerp(dmginfo:GetDamage() / 35, 100, 90))
-            if (self.NextFlinch or 0) < CurTime() and (dmginfo:IsDamageType(DMG_BUCKSHOT) or math.random() * self:GetMaxHealth() * 1.5 < dmginfo:GetDamage()) then
+            if (self.NextFlinch or 0) < CurTime() and dmginfo:IsDamageType(DMG_BUCKSHOT) then -- or math.random() * self:GetMaxHealth() * 1.5 < dmginfo:GetDamage()
                 self:FlinchOwner()
-                self.NextFlinch = CurTime() + math.Rand(1, dmginfo:IsDamageType(DMG_BUCKSHOT) and 1.5 or Lerp(dmginfo:GetDamage() / 50, 4, 1.5))
+                self.NextFlinch = CurTime() + 2.5 -- math.Rand(1, dmginfo:IsDamageType(DMG_BUCKSHOT) and 1.5 or Lerp(dmginfo:GetDamage() / 50, 4, 1.5))
             end
         end
 
