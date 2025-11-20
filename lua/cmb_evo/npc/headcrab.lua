@@ -19,8 +19,7 @@ NPC.ForceCombine = true
 if CLIENT then return end
 
 function NPC:OnSpawn()
-    -- self:SetModelScale(1.3, 0.000001)
-    -- self:SetPos(self:GetPos() + Vector(0, 0, 3))
+    self:SetCollisionBounds(Vector(-12, -12, 0), Vector(12, 12, 24))
     timer.Simple(0, function()
         self.CmbEvoCrabArmor = self:GetMaxHealth() * armor:GetFloat()
     end)

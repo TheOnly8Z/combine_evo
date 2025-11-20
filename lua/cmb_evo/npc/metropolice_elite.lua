@@ -51,10 +51,11 @@ function NPC:OnSpawn(ply)
     self.CmbEvoNextGrenade = CurTime() + math.Rand(6, 12)
 end
 
-local meleedistsqr = 96 * 96
+local meleedistsqr = 128 * 128
 local rangedistsqr = 328 * 328
-local nademindistsqr = 256 * 256
+local nademindistsqr = 328 * 328
 local nademaxdistsqr = 1500 * 1500
+
 local mins, maxs = -Vector(4, 4, 4), Vector(4, 4, 4)
 function NPC:Think()
     local enemy = self:GetEnemy()
@@ -73,6 +74,7 @@ function NPC:Think()
         self:SelectWeapon("weapon_stunstick")
         self:NextThink(CurTime())
         self:RestartGesture(self:LookupSequence("activatebaton"), true, true)
+        self.CmbEvoNextGrenade = CurTime() + 1
     elseif wep:GetClass() == "weapon_stunstick" and (self.CmbEvoNextSwap or 0) < CurTime() and distsqr >= rangedistsqr then
         self.CmbEvoNextSwap = CurTime() + 3
         self:SetSchedule(SCHED_COMBAT_STAND)
@@ -145,5 +147,14 @@ function NPC:Think()
                 end
             end)
         end
+    elseif IsValid(wep) and wep:GetClass() == "weapon_stunstick" and (self.CmbEvoNextGrenade or 0) < CurTime() and IsValid(self:GetEnemy()) and distsqr <= rangedistsqr and self:Visible(self:GetEnemy()) then
+        self.CmbEvoNextGrenade = CurTime() + math.Rand(0.25, 2)
+        self.CmbEvoNextSwap = math.max(self.CmbEvoNextSwap, CurTime() + 1)
+        local d = self:GetEnemy():GetPos() - self:GetPos()
+        d.z = 0
+        local dir = d:GetNormalized()
+        local pow = d:Dot(self:GetEnemy():GetVelocity())
+        self:SetVelocity(dir * (math.Rand(0, 1500) + math.Clamp(5 * pow, 0, 4000)) + dir:Cross(self:GetUp()) * math.Rand(-5000, 5000))
+        self:EmitSound("npc/combine_soldier/zipline_hitground" .. math.random(1, 2) .. ".wav", 70, 112, 0.5)
     end
 end

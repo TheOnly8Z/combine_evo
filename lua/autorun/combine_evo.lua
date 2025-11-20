@@ -46,6 +46,7 @@ end
 local Category = "Combine Evo"
 
 function CMBEVO.LoadNPCS()
+    local n = 0
     CMBEVO.NPC = {}
     local dir = "cmb_evo/npc/"
     local files = file.Find(dir .. "*.lua", "LUA")
@@ -60,6 +61,7 @@ function CMBEVO.LoadNPCS()
         NPC.ShortName = shortname
 
         CMBEVO.NPC[shortname] = NPC
+        n = n + 1
     end
     NPC = {}
     for shortname, data in pairs(CMBEVO.NPC) do
@@ -89,6 +91,7 @@ function CMBEVO.LoadNPCS()
             end
         end
     end
+    print("[CMBEVO] Loaded " .. n .. " NPCs.")
 end
 CMBEVO.LoadNPCS()
 hook.Add("OnReloaded", "cmb_evo", CMBEVO.LoadNPCS)
@@ -210,8 +213,11 @@ if SERVER then
         end
 
         if ent.CmbEvoBlockDamage and dmginfo:GetDamage() <= 0 then
-            ent.CmbEvoBlockDamage = nil
-            return true
+            --ent.CmbEvoBlockDamage = nil
+            ent:SetHealth(ent:Health() + 1)
+            dmginfo:SetDamage(1)
+            -- return true
+            return
         end
 
         local attacker = dmginfo:GetAttacker()

@@ -73,3 +73,16 @@ function NPC:OnDeath(attacker, inflictor)
         SafeRemoveEntityDelayed(self.CmbEvoShield, 3)
     end
 end
+
+function NPC:OnTakeDamage(dmginfo)
+    local attacker = dmginfo:GetAttacker()
+
+    if (IsValid(self.CmbEvoShield) and attacker:IsNPC() and (dmginfo:IsDamageType(DMG_SLASH) or dmginfo:IsDamageType(DMG_CLUB))) then
+        local d = (self:GetPos() - attacker:GetPos()):GetNormalized():Dot(-self:GetForward())
+        if d + 0.5 > math.random() then
+            self.CmbEvoShield:TakeDamageInfo(dmginfo)
+            return true
+        end
+
+    end
+end
