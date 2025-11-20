@@ -45,7 +45,8 @@ local function AddNPC(t, class)
 end
 local Category = "Combine Evo"
 
-local function LoadNPCS()
+function CMBEVO.LoadNPCS()
+    CMBEVO.NPC = {}
     local dir = "cmb_evo/npc/"
     local files = file.Find(dir .. "*.lua", "LUA")
     for _, filename in ipairs(files) do
@@ -67,7 +68,7 @@ local function LoadNPCS()
         end
 
         if not data.Ignore then
-            data.KeyValues = data.KeyValues or {}
+            data.KeyValues = table.Copy(data.KeyValues or {})
             data.KeyValues["squadname"] = data.Squad or "cmb_evo"
             data.KeyValues["parentname"] = "cmbevo_" .. shortname
 
@@ -89,8 +90,8 @@ local function LoadNPCS()
         end
     end
 end
-LoadNPCS()
-hook.Add("OnReloaded", "cmb_evo", LoadNPCS)
+CMBEVO.LoadNPCS()
+hook.Add("OnReloaded", "cmb_evo", CMBEVO.LoadNPCS)
 
 -----------------------------------------------------------
 -- NPC Initialize Function
@@ -129,7 +130,7 @@ if SERVER then
             table.insert(CMBEVO.NPC_Cache_ForceCombine, ent)
             for i, npc in ipairs(CMBEVO.NPC_Cache_NaturalCombine) do
                 if not IsValid(npc) then table.remove(CMBEVO.NPC_Cache_NaturalCombine, i) continue end
-                print("friendship between forced combine " .. tostring(ent) .. " and natural combine " .. tostring(npc))
+                -- print("friendship between forced combine " .. tostring(ent) .. " and natural combine " .. tostring(npc))
                 ent:AddEntityRelationship(npc, D_LI, 9999)
                 npc:AddEntityRelationship(ent, D_LI, 9999)
             end
@@ -177,7 +178,7 @@ if SERVER then
                     table.insert(CMBEVO.NPC_Cache_NaturalCombine, ent)
                     for i, npc in ipairs(CMBEVO.NPC_Cache_ForceCombine) do
                         if not IsValid(npc) then table.remove(CMBEVO.NPC_Cache_ForceCombine, i) continue end
-                        print("friendship between forced combines " .. tostring(ent) .. " and " .. tostring(npc))
+                        -- print("friendship between forced combines " .. tostring(ent) .. " and " .. tostring(npc))
                         ent:AddEntityRelationship(npc, D_LI, 9999)
                         npc:AddEntityRelationship(ent, D_LI, 9999)
                     end

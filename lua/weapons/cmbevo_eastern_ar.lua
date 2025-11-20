@@ -4,7 +4,7 @@ SWEP.Base = "cmbevo_base"
 
 SWEP.PrintName = "ZR-68"
 
-SWEP.WorldModel = "models/cmb_evo/weapons/w_zr68.mdl" -- TODO model
+SWEP.WorldModel = "models/cmb_evo/weapons/w_zr68.mdl"
 SWEP.HoldType = "ar2"
 
 SWEP.Primary.ShootSound = "CMB_EVO.ZR68.Fire"

@@ -140,7 +140,9 @@ hook.Add("ScaleNPCDamage", "cmb_evo_armored", function(ent, hitgroup, dmginfo)
 
             if ent.CmbEvoArmor[hitgroup] <= 0 then
                 -- broken!
-                ent:SetBodygroup(ent.CmbEvoArmorBodygroup[hitgroup], 1)
+                if ent.CmbEvoArmorBodygroup and ent.CmbEvoArmorBodygroup[hitgroup] then
+                    ent:SetBodygroup(ent.CmbEvoArmorBodygroup[hitgroup], 1)
+                end
                 ent:EmitSound("^npc/strider/strider_step" .. math.random(1, 3) .. ".wav", 80, math.Rand(95, 100), 1, CHAN_BODY)
                 ent:SetSchedule(SCHED_FLINCH_PHYSICS)
                 if hitgroup == HITGROUP_CHEST or ent:Health() <= ent:GetMaxHealth() * 0.5 or math.random() <= 0.25 then

@@ -4,7 +4,9 @@ SWEP.PrintName = "CMBEVO Base"
 SWEP.Spawnable = false
 
 SWEP.WorldModel = "models/weapons/w_pist_usp.mdl"
+
 SWEP.HoldType = "pistol"
+SWEP.CustomActivityTranslation = false -- When set, you must configure SWEP.ActivityTranslateAI yourself!
 
 SWEP.RenderGroup = RENDERGROUP_BOTH
 
@@ -42,7 +44,7 @@ SWEP.BurstRestTimes = nil -- {0.3, 0.66}
 
 SWEP.Primary.ClipSize = 8
 SWEP.Primary.DefaultClip = 8
-SWEP.Primary.Automatic = false
+SWEP.Primary.Automatic = true
 SWEP.Primary.Ammo = "pistol"
 
 SWEP.Primary.Projectile = nil
@@ -72,7 +74,9 @@ function SWEP:SetupDataTables()
 end
 
 function SWEP:Initialize()
-    self:SetHoldType(self.HoldType)
+    if not self.CustomActivityTranslation then
+        self:SetHoldType(self.HoldType)
+    end
 
     -- NPCs do not think on weapon, so think for them
     if SERVER then
@@ -114,20 +118,26 @@ function SWEP:PrimaryAttack()
         if self:GetNextSecondaryFire() > CurTime() then
             return
         elseif self:GetAimTime() == 0 then
-            self:SetAimTime(CurTime())
-            self:SetAimLostTime(0)
-            self.AllowAimMiss = true
-
-            -- TODO lasers or something
-            --self:EmitSound(self.Primary.AimStartSound)
-            self.AimSound = CreateSound(self, self.Primary.AimStartSound)
-            self.AimSound:PlayEx(1, 85)
-            self.AimSound:ChangePitch(150, self.Primary.AimTime)
+            self:StartAim()
             return
         elseif CurTime() < self:GetAimTime() + self.Primary.AimTime then
             return
         end
     end
+
+    -- if self.Primary.WindupTime > 0 then
+    --     if self:GetNextSecondaryFire() > CurTime() then
+    --         return
+    --     elseif self:GetAimTime() == 0 then
+    --         self:SetAimTime(CurTime())
+    --         if self.Primary.WindupSound then
+    --             self:EmitSound(self.Primary.WindupSound)
+    --         end
+    --         return
+    --     elseif CurTime() < self:GetAimTime() + self.Primary.WindupTime then
+    --         return
+    --     end
+    -- end
 
     if self.Primary.Projectile and self.Primary.ProjectileSafety then
         local tr = util.TraceHull({
@@ -144,15 +154,10 @@ function SWEP:PrimaryAttack()
         end
     end
 
-    -- self:SetAimTime(0)
-    -- self:SetAimLostTime(0)
     if self.AimSound then
         self.AimSound:Stop()
     end
-    if self.Primary.AimTime > 0 and math.random() > self.Primary.AimBlindFireChance then
-        self.AllowAimMiss = false
-    end
-
+    self.AllowAimMiss = math.random() < self.Primary.AimBlindFireChance
 
     if self.Primary.Projectile then
         local ang = owner:GetAimVector():Angle()
@@ -188,8 +193,14 @@ function SWEP:PrimaryAttack()
         owner:FireBullets(bullet)
     end
 
-    self:EmitSound(self.Primary.ShootSound)
-    self:TakePrimaryAmmo(1)
+    if not self.ShootLoopSound and self.Primary.ShootSoundLooping and SERVER then
+        self.ShootLoopSound = CreateSound(self, self.Primary.ShootSound)
+        self.ShootLoopSound:Play()
+    elseif not self.Primary.ShootSoundLooping then
+        self:EmitSound(self.Primary.ShootSound)
+    end
+
+    self:SetClip1(self:Clip1() - 1)
     self:SetNextPrimaryFire(CurTime() + self.Primary.Delay)
     if self.Primary.Delay < 0.1 then
         self:GetOwner():NextThink(CurTime() + self.Primary.Delay)
@@ -248,6 +259,17 @@ function SWEP:SecondaryAttack()
     end
 end
 
+function SWEP:StartAim(forced)
+    if self:GetAimTime() > 0 then return end
+    self:SetAimTime(CurTime())
+    self:SetAimLostTime(forced and -1 or 0)
+    self.AllowAimMiss = true
+
+    self.AimSound = CreateSound(self, self.Primary.AimStartSound)
+    self.AimSound:PlayEx(1, 85)
+    self.AimSound:ChangePitch(150, self.Primary.AimTime)
+end
+
 function SWEP:StopAim()
     self:SetAimTime(0)
     self:SetAimLostTime(0)
@@ -258,46 +280,99 @@ function SWEP:StopAim()
 end
 
 function SWEP:Reload()
+    print("Reload")
     BaseClass.Reload(self)
     self:StopAim()
 end
 
 function SWEP:Think()
-    if IsValid(self:GetOwner()) and self.Primary.AimTime > 0 and self:GetAimTime() > 0 and self:GetNextSecondaryFire() <= CurTime() then
-        if (not self.Primary.AimTimeThreshold or CurTime() <= self.GetAimTime() + self.Primary.AimTimeThreshold or (not self.AllowAimMiss or CurTime() >= self:GetAimTime() + self.Primary.AimTime)) and
-                (not IsValid(self:GetOwner():GetEnemy()) or not self:GetOwner():Visible(self:GetOwner():GetEnemy())) then
+    if CLIENT then return end
+    local enemy = self:GetOwner():GetEnemy()
+
+    if IsValid(self:GetOwner()) and IsValid(enemy) and self:Clip1() > 0 and self.Primary.AimTime > 0 and self:GetAimTime() > 0 and self:GetNextSecondaryFire() <= CurTime() then
+        -- Check visibility
+        local visible = self:GetOwner():Visible(enemy)
+        local aimready = self:GetAimTime() + self.Primary.AimTime < CurTime()
+
+        if self:GetAimLostTime() == 0 then
+            if not visible and ((not aimready and (CurTime() < self.GetAimTime() + (self.Primary.AimTimeThreshold or 0)))
+                    or (aimready and not self.Primary.AimIgnoreCover)
+                    or (aimready and self.Primary.AimIgnoreCover and not self.AllowAimMiss)) then
+                self:SetAimLostTime(CurTime() + (self.AllowAimMiss and 0.12 or 0.25))
+            end
+        elseif self:GetAimLostTime() > 0 and self:GetAimLostTime() <= CurTime() then
+            self:StopAim()
+            if not aimready then
+                self:EmitSound(self.Primary.AimCancelSound)
+            end
+        elseif self:GetAimLostTime() > 0 and visible then
+            self:SetAimLostTime(0)
+        end
+
+        -- adjust point of aim
+        if visible then
+            self:SetAimVector((enemy:WorldSpaceCenter() - self:GetOwner():GetShootPos()):GetNormalized())
+        else
+            self:SetAimVector(self:GetOwner():GetAimVector())
+        end
+
+        -- Ready to shoot
+        if aimready and (visible or self.AllowAimMiss) then
+            if not self:GetOwner():CapabilitiesGet(CAP_MOVE_SHOOT) then
+                self:GetOwner():SetSaveValue( "m_vecLastPosition", self:GetOwner():GetPos() )
+                self:GetOwner():SetSchedule(SCHED_FORCED_GO)
+            end
+            print("aim fire")
+            self:PrimaryAttack()
+            self:GetOwner():RestartGesture(self.ActivityTranslateAI[ACT_GESTURE_RANGE_ATTACK1] or ACT_GESTURE_RANGE_ATTACK1, true, true)
+        end
+
+        --[[]
+        if (not self.Primary.AimTimeThreshold or CurTime() < self.GetAimTime() + self.Primary.AimTimeThreshold or (not self.AllowAimMiss or CurTime() < self:GetAimTime() + self.Primary.AimTime)) and
+                (not IsValid(enemy) or not self:GetOwner():Visible(enemy))
+                and not (CurTime() < self:GetAimTime() + self.Primary.AimTime and self.Primary.AimIgnoreCover and self.AllowAimMiss) then
             -- If can't see target for more than this amount of time, they are lost and we cancel the shot
             if self:GetAimLostTime() == 0 then
                 self:SetAimLostTime(CurTime() + (self.AllowAimMiss and 0.12 or 0.25))
-            elseif self:GetAimLostTime() <= CurTime() then
+            elseif self:GetAimLostTime() > 0 and self:GetAimLostTime() <= CurTime() then
                 self:StopAim()
                 if self.AllowAimMiss then
                     self:EmitSound(self.Primary.AimCancelSound)
                 end
             end
         else
-            if self:GetAimLostTime() == 0 then
-                if IsValid(self:GetOwner():GetEnemy()) then
-                    self:SetAimVector((self:GetOwner():GetEnemy():EyePos() - self:GetOwner():GetShootPos()):GetNormalized())
-                else
+            if self:GetAimLostTime() <= 0 then
+                if IsValid(enemy) then
+                    self:SetAimVector((enemy:WorldSpaceCenter() - self:GetOwner():GetShootPos()):GetNormalized())
+                elseif self:GetAimLostTime() == 0 then
                     self:SetAimVector(self:GetOwner():GetAimVector())
                 end
+            elseif self:GetOwner():Visible(enemy) then
+                self:SetAimLostTime(0)
             end
 
             if CurTime() >= self:GetAimTime() + self.Primary.AimTime then
-                if self.AllowAimMiss and self:Clip1() > 0 and IsValid(self:GetOwner():GetEnemy()) and self:GetOwner():GetEnemy():Health() > 0 and self:GetOwner():Visible(self:GetOwner():GetEnemy()) then
-                    if self:GetNextPrimaryFire() < CurTime() then
+                if self:Clip1() > 0 and IsValid(enemy) and (self.AllowAimMiss or self:GetOwner():Visible(enemy)) then
+                    if self:GetNextPrimaryFire() < CurTime()  then
                         self:PrimaryAttack()
                     end
                 else
                     self:StopAim()
                 end
-            else
-                self:SetAimLostTime(0)
             end
         end
-    elseif self.Primary.AimTime > 0 then
-        self:StopAim()
+        ]]
+    else
+        if self.Primary.AimTime > 0 and self:GetAimTime() > 0 then
+            self:StopAim()
+        end
+        if self.ShootLoopSound and (self.Primary.AimTime > 0 or CurTime() > self:GetNextPrimaryFire() + self.Primary.Delay) then
+            self.ShootLoopSound:Stop()
+            self.ShootLoopSound = nil
+            if self.Primary.ShootSoundLoopStop then
+                self:EmitSound(self.Primary.ShootSoundLoopStop)
+            end
+        end
     end
 end
 
@@ -340,7 +415,6 @@ if CLIENT then
     end
 end
 
-
 function SWEP:GetCapabilities()
     return bit.bor(CAP_WEAPON_RANGE_ATTACK1, CAP_INNATE_RANGE_ATTACK1)
 end
@@ -367,6 +441,16 @@ function SWEP:OnRemove()
     if self.AimSound then
         self.AimSound:Stop()
     end
+    if self.ShootLoopSound then
+        self.ShootLoopSound:Stop()
+    end
+end
+
+function SWEP:TranslateActivity(act)
+    if self.ActivityTranslateAI and self.ActivityTranslateAI[act]then
+        return self.ActivityTranslateAI[act]
+    end
+    return -1
 end
 
 function SWEP:OnProjectileCreated(ent) end

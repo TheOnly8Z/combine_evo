@@ -17,7 +17,7 @@ SWEP.Primary.Tracer = 1
 SWEP.Primary.TracerName = "AR2Tracer"
 SWEP.Primary.EjectName = false
 
-SWEP.Primary.AimTime = 1.4
+SWEP.Primary.AimTime = 1
 SWEP.Primary.AimTimeThreshold = 1
 SWEP.Primary.AimBlindFireChance = 0.5
 

@@ -1,5 +1,6 @@
 -----------------------------------------------------------
--- Grenadier
+-- Mechcrab
+-- Model Credits: Stormy, DMCH (https://steamcommunity.com/sharedfiles/filedetails/?id=256134101)
 -----------------------------------------------------------
 
 local armor = CreateConVar("cmbevo_mechcrab_armor", 2, FCVAR_ARCHIVE, "[Mechcrab] Durability of mechcrab armor, as a multiplier of its health.", 0)
@@ -78,3 +79,23 @@ function NPC:OnScaleDamage(hitgroup, dmginfo)
         end
     end
 end
+
+--[[
+function NPC:OnDeath(attacker)
+    if not self.Exploded then
+        self.Exploded = true
+        timer.Simple(0, function()
+            if not IsValid(self) then return end
+            local fx = EffectData()
+            fx:SetOrigin(self:GetPos())
+            if self:WaterLevel() > 0 then
+                util.Effect("WaterSurfaceExplosion", fx)
+            else
+                util.Effect("HelicopterMegaBomb", fx)
+            end
+            self:EmitSound("^cmb_evo/weapons/frag_explode-" .. math.random(1, 3) .. ".wav", 110, 105)
+            util.BlastDamage(self, attacker, self:GetPos(), 200, 25)
+        end)
+    end
+end
+]]
