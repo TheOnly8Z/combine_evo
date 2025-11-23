@@ -17,7 +17,7 @@ NPC.KeyValues = {
 }
 NPC.Tags = {["eastern_assault"] = 1, ["resist_exp"] = true}
 NPC.Squad = "overwatch_eastern"
-NPC.Proficiency = WEAPON_PROFICIENCY_GOOD
+NPC.Proficiency = WEAPON_PROFICIENCY_AVERAGE
 
 NPC.GrenadeEntity = "cmbevo_nade_ed"
 
@@ -78,7 +78,7 @@ function CMBEVO.EasternAssault(npc)
     end
 
     if suppressive_fire then
-        npc:SetActivity(ACT_SIGNAL_GROUP)
+        npc:SetActivity(ACT_SIGNAL_HALT)
     else
         npc:SetActivity(ACT_SIGNAL_ADVANCE)
     end
@@ -87,39 +87,41 @@ function CMBEVO.EasternAssault(npc)
         ent.CMBEVO_EDCharging = true
         ent.CMBEVO_EDNextCharge = CurTime() + (tgt:IsPlayer() and 15 or 8)
 
-        if suppressive_fire then
-            ent:PlaySentence("COMBINE_ANNOUNCE", 0, math.Rand(0, 3))
+        if ent ~= npc then
+            if suppressive_fire then
+                ent:PlaySentence("COMBINE_ANNOUNCE", math.Rand(0, 1), 1)
 
-            local tr = util.TraceLine({
-                start = ent:GetPos(),
-                endpos = ent:GetPos() + (ent:GetPos() - tgt:GetPos()):GetNormalized() * 256,
-                mask = MASK_SOLID_BRUSHONLY,
-            })
-            ent:SetSaveValue("m_vecLastPosition", tr.HitPos - tr.Normal * 32)
-            ent:SetSchedule(SCHED_FORCED_GO)
-            timer.Simple(3, function()
-                if IsValid(ent) then
-                    ent:SetSchedule(SCHED_ESTABLISH_LINE_OF_FIRE)
-                end
-            end)
-        else
-            ent:PlaySentence("COMBINE_FLANK", 0, math.Rand(0.25, 2))
+                local tr = util.TraceLine({
+                    start = ent:GetPos(),
+                    endpos = ent:GetPos() + (ent:GetPos() - tgt:GetPos()):GetNormalized() * 256,
+                    mask = MASK_SOLID_BRUSHONLY,
+                })
+                ent:SetSaveValue("m_vecLastPosition", tr.HitPos - tr.Normal * 32)
+                ent:SetSchedule(SCHED_FORCED_GO)
+                timer.Simple(3, function()
+                    if IsValid(ent) then
+                        ent:SetSchedule(SCHED_ESTABLISH_LINE_OF_FIRE)
+                    end
+                end)
+            else
+                ent:PlaySentence("COMBINE_FLANK", math.Rand(0, 1), 1)
 
-            local dist = tgt:GetPos():Distance(ent:GetPos())
-            local dir = Vector(1, 0, 0):Angle()
-            dir:RotateAroundAxis(Vector(0, 0, 1), math.Rand(0, 360))
-            local tr = util.TraceLine({
-                start = tgt:GetPos() + Vector(0, 0, 8),
-                endpos = tgt:GetPos() + dir:Forward() * math.Rand(48, 96),
-                mask = MASK_SOLID_BRUSHONLY,
-            })
-            ent:SetSaveValue("m_vecLastPosition", tr.HitPos - tr.Normal * 16)
-            ent:SetSchedule(SCHED_FORCED_GO_RUN)
-            timer.Simple(math.Clamp(dist / 200, 1, 3) * math.Rand(0.8, 1.2) + (ent == npc and 1 or 0), function()
-                if IsValid(ent) then
-                    ent:SetSchedule(SCHED_ESTABLISH_LINE_OF_FIRE)
-                end
-            end)
+                local dist = tgt:GetPos():Distance(ent:GetPos())
+                local dir = Vector(1, 0, 0):Angle()
+                dir:RotateAroundAxis(Vector(0, 0, 1), math.Rand(0, 360))
+                local tr = util.TraceLine({
+                    start = tgt:GetPos() + Vector(0, 0, 8),
+                    endpos = tgt:GetPos() + dir:Forward() * math.Rand(48, 96),
+                    mask = MASK_SOLID_BRUSHONLY,
+                })
+                ent:SetSaveValue("m_vecLastPosition", tr.HitPos - tr.Normal * 16)
+                ent:SetSchedule(SCHED_FORCED_GO_RUN)
+                timer.Simple(math.Clamp(dist / 200, 1, 3) * math.Rand(0.8, 1.2) + (ent == npc and 1 or 0), function()
+                    if IsValid(ent) then
+                        ent:SetSchedule(SCHED_ESTABLISH_LINE_OF_FIRE)
+                    end
+                end)
+            end
         end
 
         local cur_squad = ent:GetSquad() -- each ent gets their own squad so everyone gets to shoot
@@ -148,7 +150,7 @@ function CMBEVO.EasternAssault(npc)
 
         ent.CMBEVO_EDGlow = glow
 
-        timer.Simple(5, function()
+        timer.Simple(CMBEVO.GetTag(npc, "eastern_assault") == 2 and 6 or 3, function()
             if IsValid(ent) then
                 ent.CMBEVO_EDCharging = nil
                 ent:SetCurrentWeaponProficiency(cur_prof)
@@ -159,8 +161,52 @@ function CMBEVO.EasternAssault(npc)
     end
 end
 
+function CMBEVO.EasternBuff(npc)
+    if npc.CMBEVO_EDCharging or not CMBEVO.GetTag(npc, "eastern_assault") then return end
+    local tgt = npc:GetEnemy()
+    npc.CMBEVO_EDCharging = true
+    npc.CMBEVO_EDNextCharge = CurTime() + (IsValid(tgt) and tgt:IsPlayer() and 15 or 8)
+
+    local cur_squad = npc:GetSquad() -- each ent gets their own squad so everyone gets to shoot
+    local cur_prof = npc:GetCurrentWeaponProficiency()
+    npc:SetCurrentWeaponProficiency(math.min(cur_prof + 1, WEAPON_PROFICIENCY_PERFECT))
+    npc:SetSquad("cmbevo_assault_" .. npc:EntIndex())
+
+    -- cheat a little and reload their clip so they can shoot during the charge
+    npc:GetActiveWeapon():SetClip1(npc:GetActiveWeapon():GetMaxClip1())
+
+    local glow = ents.Create("env_sprite")
+    glow:SetKeyValue("model", "sprites/glow08.vmt")
+    glow:SetKeyValue("scale", "0.2")
+    glow:SetKeyValue("rendermode", "5")
+    glow:SetKeyValue("renderamt", "150")
+
+    if CMBEVO.GetTag(npc, "eastern_assault") == 2 then
+        glow:SetKeyValue("rendercolor", "255 50 0")
+    elseif CMBEVO.GetTag(npc, "eastern_assault") == 1 then
+        glow:SetKeyValue("rendercolor", "255 175 0")
+    end
+    glow:SetPos(npc:EyePos())
+    glow:SetAttachment(npc, 3) -- deprecate my balls
+    glow:Spawn()
+    glow:Fire("ShowSprite")
+
+    npc.CMBEVO_EDGlow = glow
+
+    timer.Simple(5, function()
+        if IsValid(npc) then
+            npc.CMBEVO_EDCharging = nil
+            npc:SetCurrentWeaponProficiency(cur_prof)
+            npc:SetSquad(cur_squad)
+            SafeRemoveEntity(glow)
+        end
+    end)
+end
+
 function NPC:OnGrenadeCreated(ent)
-    CMBEVO.EasternAssault(self)
+    if math.random() <= 0.25 and self == ai.GetSquadLeader(self:GetSquad()) then
+        CMBEVO.EasternAssault(self)
+    end
 end
 
 function NPC:Think()
@@ -181,6 +227,18 @@ function NPC:Think()
             SafeRemoveEntityDelayed(tgt, 1)
             self:Fire("ThrowGrenadeAtTarget", tgtname)
             self.CMBEVO_NextDangerNade = CurTime() + 5
+        end
+    end
+
+    if IsValid(self.CMBEVO_EDSquadGlow) and not self.CMBEVO_EDCharging and (self.CMBEVO_NextFollowCheck or 0) < CurTime() then
+        self.CMBEVO_NextFollowCheck = CurTime() + 3
+
+        local buddy = ai.GetSquadLeader(self:GetSquad())
+        if IsValid(buddy) and buddy ~= self and buddy:GetPos():DistToSqr(self:GetPos()) >= (self:GetNPCState() == NPC_STATE_COMBAT and 328 * 328 or 256 * 256) then
+            buddy.CMBEVO_NextFollowCheck = CurTime() + 6
+            self.CMBEVO_NextFollowCheck = CurTime() + 6
+            self:SetTarget(buddy)
+            self:SetSchedule(SCHED_TARGET_CHASE)
         end
     end
 end

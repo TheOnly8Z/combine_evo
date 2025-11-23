@@ -23,7 +23,7 @@ SWEP.Primary.Tracer = 2
 SWEP.Primary.TracerName = "Tracer"
 SWEP.Primary.EjectName = "RifleShellEject"
 
-SWEP.SpreadFromProficiency = {2, 15}
+SWEP.SpreadFromProficiency = {0, 15}
 SWEP.BurstSettings = {3, 5, 0.1}
 SWEP.BurstRestTimes = {0.6, 1}
 

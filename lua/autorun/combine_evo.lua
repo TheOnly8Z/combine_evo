@@ -194,7 +194,7 @@ if SERVER then
         for shortname, tbl in pairs(CMBEVO.NPC_Cache) do
             if isfunction(CMBEVO.NPC[shortname].Think) then
                 for i, npc in pairs(tbl) do
-                    if not IsValid(npc) then
+                    if not IsValid(npc) or npc:Health() <= 0 then
                         table.remove(tbl, i)
                         continue
                     end

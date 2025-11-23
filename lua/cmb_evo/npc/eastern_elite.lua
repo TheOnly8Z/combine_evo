@@ -11,7 +11,7 @@ NPC.Skin = 0
 NPC.Weapons = {"cmbevo_eastern_ar"}
 NPC.SpawnFlags = 16384 + 262144 -- SF_NPC_NO_PLAYER_PUSHAWAY + SF_COMBINE_NO_AR2DROP
 NPC.Health = 70 -- sk_combine_guard_health
-NPC.Proficiency = WEAPON_PROFICIENCY_VERY_GOOD
+NPC.Proficiency = WEAPON_PROFICIENCY_GOOD
 NPC.KeyValues = {
     TacticalVariant = "0",
     NumGrenades = "8",
@@ -54,7 +54,7 @@ end
 
 
 function NPC:OnGrenadeCreated(ent)
-    CMBEVO.EasternAssault(self)
+    -- CMBEVO.EasternAssault(self)
 end
 
 local defaultsquads = {["overwatch"] = true, ["overwatch_eastern"] = true}
@@ -70,20 +70,17 @@ local squadclr = {
 }
 local squadi = 1
 function NPC:Think()
-
     -- Split up squads if it gets too big
-    --[[]
-    if defaultsquads[self:GetSquad()] and (self.CMBEVO_NextSquadCheck or 0) < CurTime() then
+    local squad = self:GetSquad()
+    local squadcount = self:GetSquad() and ai.GetSquadMemberCount(squad)
+    if ((defaultsquads[squad] and ai.GetSquadMemberCount("overwatch_eastern") > 2) or (string.Left(squad, 8) == "eastern_" and squadcount < 3 and ai.GetSquadMemberCount("overwatch_eastern") > 0)) and (self.CMBEVO_NextSquadCheck or 0) < CurTime() then
         self.CMBEVO_NextSquadCheck = CurTime() + 5
-        local squad = self:GetSquad()
-        local squadcount = ai.GetSquadMemberCount(squad)
-        if squadcount >= 6 then
-            local newsquad = "eastern_" .. squadi
-            local count = 3
-            local clr = squadclr[(squadi % #squadclr) + 1]
+        local count = 3
+        local newsquad = "eastern_" .. squadi
+        local clr = squadclr[(squadi % #squadclr) + 1]
 
+        if defaultsquads[squad] then
             self:SetSquad(newsquad)
-            self:SetActivity(ACT_SIGNAL_GROUP)
 
             local slglow = ents.Create("env_sprite")
             slglow:SetKeyValue("model", "sprites/glow04_noz.vmt")
@@ -97,40 +94,82 @@ function NPC:Think()
             slglow:Fire("ShowSprite")
             self.CMBEVO_EDSquadGlow = slglow
 
-            for _, npc in pairs(ai.GetSquadMembers(squad)) do
-                count = count - 1
-                npc:SetSquad(newsquad)
-
-                local glow = ents.Create("env_sprite")
-                glow:SetKeyValue("model", "sprites/glow04_noz.vmt")
-                glow:SetKeyValue("scale", "0.05")
-                glow:SetKeyValue("rendermode", "5")
-                glow:SetKeyValue("renderamt", "150")
-                glow:SetKeyValue("rendercolor", tostring(clr.r) .. " " .. tostring(clr.g) .. " " .. tostring(clr.b))
-                glow:SetPos(npc:GetPos())
-                glow:SetAttachment(npc, 2) -- deprecate my balls
-                glow:Spawn()
-                glow:Fire("ShowSprite")
-                npc.CMBEVO_EDSquadGlow = glow
-
-                if not IsValid(npc:GetEnemy()) then
-                    npc:SetTarget(self)
-                    npc:SetSchedule(SCHED_TARGET_CHASE)
-                end
-                if count <= 0 then break end
-            end
-
             squadi = squadi + 1
-
+        else
+            newsquad = squad
+            count = 4 - squadcount
+            clr = squadclr[(tonumber(string.Right(squad, 1)) % #squadclr) + 1]
         end
+
+        self:PlaySentence("COMBINE_IDLE", 0, 1)
+        self:SetActivity(ACT_SIGNAL_GROUP)
+
+        for _, npc in pairs(ai.GetSquadMembers("overwatch_eastern")) do
+            if not CMBEVO.GetTag(npc, "eastern_assault") or npc:GetPos():DistToSqr(self:GetPos()) >= 1024 * 1024 then continue end
+
+            count = count - 1
+            npc:SetSquad(newsquad)
+            npc:PlaySentence("COMBINE_ANSWER", math.Rand(0, 0.5), 1)
+
+            local glow = ents.Create("env_sprite")
+            glow:SetKeyValue("model", "sprites/glow04_noz.vmt")
+            glow:SetKeyValue("scale", "0.05")
+            glow:SetKeyValue("rendermode", "5")
+            glow:SetKeyValue("renderamt", "150")
+            glow:SetKeyValue("rendercolor", tostring(clr.r) .. " " .. tostring(clr.g) .. " " .. tostring(clr.b))
+            glow:SetPos(npc:GetPos())
+            glow:SetAttachment(npc, 2) -- deprecate my balls
+            glow:Spawn()
+            glow:Fire("ShowSprite")
+            npc.CMBEVO_EDSquadGlow = glow
+
+            if not IsValid(npc:GetEnemy()) then
+                npc:SetTarget(self)
+                npc:SetSchedule(SCHED_TARGET_CHASE)
+            end
+            if count <= 0 then break end
+        end
+
     end
-    ]]
 
     if bit.band(self:CapabilitiesGet(), CAP_WEAPON_RANGE_ATTACK2) ~= 0
-        and IsValid(self:GetEnemy()) and math.random() <= (self:GetEnemy():IsPlayer() and 0.5 or 0.75) -- only 50% chance per try for players
+        and IsValid(self:GetEnemy()) and math.random() <= (self:GetEnemy():IsPlayer() and 0.6 or 0.75)
         and IsValid(self:GetActiveWeapon()) and self:GetActivity() ~= ACT_RELOAD then
 
         local dist_sqr = self:GetEnemy():GetPos():DistToSqr(self:GetPos())
+
+        if (self.CMBEVO_NextOrder or 0) < CurTime() and (self.CMBEVO_EDNextCharge or 0) < CurTime()
+                and IsValid(self:GetEnemy()) and self:Visible(self:GetEnemy())
+                and ai.GetSquadMemberCount(self:GetSquad()) > 2 then
+
+            self.CMBEVO_NextOrder = CurTime() + 15
+
+            if dist_sqr <= 728 * 728 and math.random() <= 0.75 then
+
+                self:SetActivity(ACT_SIGNAL_TAKECOVER)
+                self:PlaySentence("COMBINE_GO_ALERT", 0, 1)
+
+                for _, npc in pairs(ai.GetSquadMembers(self:GetSquad())) do
+                    -- if not npc:Visible(self:GetEnemy()) then continue end
+                    self.CMBEVO_NextOrder = CurTime() + 15
+
+                    local tgtname = "cmb_evo_throw_" .. npc:EntIndex()
+                    local info_target = ents.Create("info_target")
+                    info_target:SetKeyValue("targetname", tgtname)
+                    info_target:Spawn()
+                    info_target:Activate()
+                    info_target:SetPos(self:GetEnemy():WorldSpaceCenter() + VectorRand() * 32)
+                    npc:PlaySentence("COMBINE_ANSWER", math.Rand(0.2, 0.3), 1)
+                    npc:Fire("ThrowGrenadeAtTarget", tgtname, math.Rand(0.5, 0.6))
+                    SafeRemoveEntityDelayed(info_target, 2)
+
+                end
+            else
+                CMBEVO.EasternAssault(self)
+            end
+            return
+        end
+
         if self:GetActiveWeapon():GetClass() == "cmbevo_eastern_ar" and (self.CMBEVO_NextAltFire or 0) < CurTime()
                 and dist_sqr <= 500 * 500
                 and math.random() * self:GetActiveWeapon():GetMaxClip2() < self:GetActiveWeapon():Clip2() then
