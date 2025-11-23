@@ -9,9 +9,9 @@ SWEP.HoldType = "pistol"
 
 SWEP.Primary.ShootSound = "CMB_EVO.357.Fire"
 
-SWEP.Primary.Damage = 20
+SWEP.Primary.Damage = 10
 SWEP.Primary.Num = 1
-SWEP.Primary.Cone = 0.01
+SWEP.Primary.Cone = 0
 SWEP.Primary.Delay = 0.9
 SWEP.Primary.Tracer = 1
 SWEP.Primary.TracerName = "AR2Tracer"
@@ -19,12 +19,17 @@ SWEP.Primary.EjectName = false
 
 SWEP.Primary.AimTime = 1
 SWEP.Primary.AimTimeThreshold = 1
-SWEP.Primary.AimBlindFireChance = 0.5
+SWEP.Primary.AimBlindFireChance = 0.95
+SWEP.Primary.AimBurstLength = {3, 3}
+SWEP.Primary.AimCooldown = 1
+
+SWEP.Primary.AimStartSound = "CMB_EVO.ChargeUp"
+SWEP.Primary.AimCancelSound = "CMB_EVO.ChargeEnd"
 
 SWEP.Primary.AimLaserStrength = 10
 SWEP.Primary.AimLaserColor = Color(255, 0, 0)
 
-SWEP.SpreadFromProficiency = {0, 3}
+SWEP.SpreadFromProficiency = {0, 2}
 SWEP.BurstSettings = {1, 1, 0}
 SWEP.BurstRestTimes = {0, 0}
 

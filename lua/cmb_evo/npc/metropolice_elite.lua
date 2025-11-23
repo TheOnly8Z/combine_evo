@@ -136,7 +136,6 @@ function NPC:Think()
                     nade:Spawn()
                     nade:GetPhysicsObject():SetVelocityInstantaneous(throwvelocity)
                     nade:GetPhysicsObject():SetAngleVelocityInstantaneous(VectorRand() * 1000)
-                    print(throwvelocity)
                     nade:Fire("SetTimer", 3)
 
                 end

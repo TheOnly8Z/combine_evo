@@ -15,6 +15,7 @@ NPC.Proficiency = WEAPON_PROFICIENCY_POOR
 
 local function makeshield(self)
     if not IsValid(self.CmbEvoShield) then
+        self:SetupBones()
         self.CmbEvoShield = ents.Create( "cmbevo_shield" ) --
         self.CmbEvoShield:SetModel( "models/weapons/cmb_evo/riot_shield.mdl" )
         self.CmbEvoShield:SetOwner( self )

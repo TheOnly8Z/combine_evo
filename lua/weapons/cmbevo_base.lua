@@ -26,6 +26,8 @@ SWEP.Primary.ProjectileArc = nil
 SWEP.Primary.AimTime = 0 -- Must lock onto target for this long before firing
 SWEP.Primary.AimTimeThreshold = nil -- If lock on time is longer than this, we won't cancel the shot anymore even if they go behind cover
 SWEP.Primary.AimBlindFireChance = 0.5 -- After a shot, this is the chance the NPC will be okay with shooting at cover
+SWEP.Primary.AimBurstLength = nil -- {min, max}
+SWEP.Primary.AimCooldown = 0
 
 SWEP.Primary.AimLaserStrength = 0
 SWEP.Primary.AimLaserColor = Color(255, 0, 0)
@@ -71,6 +73,7 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 0, "AimTime")
     self:NetworkVar("Float", 1, "AimLostTime")
     self:NetworkVar("Vector", 0, "AimVector")
+    self:NetworkVar("Int", 0, "BurstLength")
 end
 
 function SWEP:Initialize()
@@ -206,6 +209,13 @@ function SWEP:PrimaryAttack()
         self:GetOwner():NextThink(CurTime() + self.Primary.Delay)
     end
 
+    if IsFirstTimePredicted() and self.Primary.AimTime > 0 and self.Primary.AimBurstLength then
+        self:SetBurstLength(self:GetBurstLength() - 1)
+        if self:GetBurstLength() <= 0 then
+            self:StopAim()
+        end
+    end
+
     -- self:GetOwner():MuzzleFlash()
 
     -- TODO Muzzle Effect
@@ -268,11 +278,16 @@ function SWEP:StartAim(forced)
     self.AimSound = CreateSound(self, self.Primary.AimStartSound)
     self.AimSound:PlayEx(1, 85)
     self.AimSound:ChangePitch(150, self.Primary.AimTime)
+
+    if SERVER and self.Primary.AimBurstLength then
+        self:SetBurstLength(math.random(self.Primary.AimBurstLength[1], self.Primary.AimBurstLength[2]))
+    end
 end
 
 function SWEP:StopAim()
     self:SetAimTime(0)
     self:SetAimLostTime(0)
+    self:SetNextSecondaryFire(CurTime() + self.Primary.AimCooldown)
     if self.AimSound then
         self.AimSound:Stop()
         self.AimSound = nil
@@ -280,7 +295,6 @@ function SWEP:StopAim()
 end
 
 function SWEP:Reload()
-    print("Reload")
     BaseClass.Reload(self)
     self:StopAim()
 end
@@ -322,7 +336,6 @@ function SWEP:Think()
                 self:GetOwner():SetSaveValue( "m_vecLastPosition", self:GetOwner():GetPos() )
                 self:GetOwner():SetSchedule(SCHED_FORCED_GO)
             end
-            print("aim fire")
             self:PrimaryAttack()
             self:GetOwner():RestartGesture(self.ActivityTranslateAI[ACT_GESTURE_RANGE_ATTACK1] or ACT_GESTURE_RANGE_ATTACK1, true, true)
         end
