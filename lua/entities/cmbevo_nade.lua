@@ -79,7 +79,7 @@ function ENT:Initialize()
 
     if self.AudioLoop then
         self.LoopSound = CreateSound(self, self.AudioLoop)
-        self.LoopSound:Play()
+        self.LoopSound:PlayEx(self.LoopSoundVolume or 1, self.LoopSoundPitch or 100)
     end
 
     if self.InstantFuse then

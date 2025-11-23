@@ -14,6 +14,9 @@ ENT.ExplodeSounds = {
     "^cmb_evo/weapons/frag_explode-2.wav",
     "^cmb_evo/weapons/frag_explode-3.wav",
 }
+ENT.AudioLoop = "CMB_EVO.ED_Grenade.Loop"
+ENT.LoopSoundPitch = 130
+ENT.LoopSoundVolume = 0.6
 
 local clr = Color(255, 128, 0, 150)
 
@@ -26,7 +29,7 @@ end
 function ENT:Detonate()
     local attacker = IsValid(self:GetOwner()) and self:GetOwner() or self
 
-    util.BlastDamage(self, attacker, self:GetPos(), 200, 20)
+    util.BlastDamage(self, attacker, self:GetPos(), 200, 25)
 
     local fx = EffectData()
     fx:SetOrigin(self:GetPos())
@@ -48,7 +51,7 @@ function ENT:Impact(data, col)
     else
         sound.EmitHint(SOUND_DANGER, self:GetPos(), 96, 0.5, self)
         self:EmitSound("weapons/tripwire/hook.wav", 65, 108)
-        self:GetPhysicsObject():SetVelocityInstantaneous(data.OurNewVelocity * 0.2 + Vector(math.Rand(-75, 75), math.Rand(-75, 75), math.Rand(280, 350)))
+        self:GetPhysicsObject():SetVelocityInstantaneous(data.OurNewVelocity * 0.1 + Vector(math.Rand(-25, 25), math.Rand(-25, 25), math.Rand(280, 350)))
     end
 end
 
@@ -61,3 +64,12 @@ function ENT:DrawTranslucent()
     render.SetMaterial(glow)
     render.DrawSprite(self:GetAttachment(1).Pos, 24, 24, clr)
 end
+
+sound.Add({
+    name = "CMB_EVO.ED_Grenade.Loop",
+    channel = CHAN_WEAPON,
+    volume = 0.7,
+    level = 75,
+    pitch = 120,
+    sound = "npc/attack_helicopter/aheli_crash_alert2.wav"
+})
